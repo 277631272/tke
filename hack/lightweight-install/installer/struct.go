@@ -1,4 +1,4 @@
-package main
+package installer
 
 type ClusterInfoPatch struct {
 	Data struct {

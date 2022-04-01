@@ -42,7 +42,7 @@ tke-auth:
     adminPassword: 
 tke-platform:
   # 必填 VIP，或者公网可访问的集群IP
-  publicIP:
+  publicIP: 172.18.0.2
   metricsServerImage: tkestack/metrics-server:v0.3.6
   addonResizerImage: tkestack/addon-resizer:1.8.11
   api:
