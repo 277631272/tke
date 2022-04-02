@@ -112,7 +112,7 @@ func NewController(
 				if !ok {
 					return false
 				}
-				provider, err := clusterprovider.GetProvider(cluster.Spec.Type)
+				provider, err := clusterprovider.GetProvider(cluster.Spec.Type, cluster.Name)
 				if err != nil {
 					return false
 				}
@@ -196,7 +196,7 @@ func (c *Controller) updateCluster(old, obj interface{}) {
 
 	controllerNeedUpddateResult := c.needsUpdate(oldCluster, cluster)
 	var providerNeedUpddateResult bool
-	provider, _ := clusterprovider.GetProvider(cluster.Spec.Type)
+	provider, _ := clusterprovider.GetProvider(cluster.Spec.Type, cluster.Name)
 	if provider != nil {
 		providerNeedUpddateResult = provider.NeedUpdate(oldCluster, cluster)
 	}
@@ -383,7 +383,7 @@ func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) 
 		return fmt.Errorf("ensureCreateClusterCredential error: %w", err)
 	}
 	log.Infof("cls: %s GetProvider", cluster.Name)
-	provider, err := clusterprovider.GetProvider(cluster.Spec.Type)
+	provider, err := clusterprovider.GetProvider(cluster.Spec.Type, cluster.Name)
 	if err != nil {
 		return err
 	}
@@ -420,7 +420,7 @@ func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) 
 }
 
 func (c *Controller) onUpdate(ctx context.Context, cluster *platformv1.Cluster) error {
-	provider, err := clusterprovider.GetProvider(cluster.Spec.Type)
+	provider, err := clusterprovider.GetProvider(cluster.Spec.Type, cluster.Name)
 	if err != nil {
 		return err
 	}

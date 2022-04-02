@@ -34,6 +34,7 @@ import (
 	"tkestack.io/tke/pkg/platform/types"
 	v1 "tkestack.io/tke/pkg/platform/types/v1"
 	"tkestack.io/tke/pkg/platform/util/credential"
+	"tkestack.io/tke/pkg/util/log"
 )
 
 var (
@@ -111,10 +112,13 @@ func Providers() []string {
 }
 
 // GetProvider returns provider by name
-func GetProvider(name string) (Provider, error) {
+func GetProvider(name string, cls string) (Provider, error) {
+	log.Infof("cls: %s GetV1Cluster GetProvider before rlock", cls)
 	providersMu.RLock()
+	log.Infof("cls: %s GetV1Cluster GetProvider", cls)
 	provider, ok := providers[name]
 	providersMu.RUnlock()
+	log.Infof("cls: %s GetV1Cluster GetProvider after rlock", cls)
 	if !ok {
 		return nil, fmt.Errorf("cluster: unknown provider %q (forgotten import?)", name)
 
@@ -126,7 +130,7 @@ func GetProvider(name string) (Provider, error) {
 func GetCluster(ctx context.Context, platformClient internalversion.PlatformInterface, cluster *platform.Cluster, username string) (*types.Cluster, error) {
 	result := new(types.Cluster)
 	result.Cluster = cluster
-	provider, err := GetProvider(cluster.Spec.Type)
+	provider, err := GetProvider(cluster.Spec.Type, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +165,12 @@ func GetV1Cluster(ctx context.Context, platformClient platformversionedclient.Pl
 	result := new(v1.Cluster)
 	result.Cluster = cluster
 	result.IsCredentialChanged = false
-	provider, err := GetProvider(cluster.Spec.Type)
+	log.Infof("cls: %s GetV1Cluster GetProvider", cluster.Name)
+	provider, err := GetProvider(cluster.Spec.Type, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("cls: %s GetV1Cluster GetClusterCredentialV1", cluster.Name)
 	clusterCredential, err := credential.GetClusterCredentialV1(ctx, platformClient, cluster, username)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
