@@ -377,38 +377,45 @@ func (c *Controller) reconcile(ctx context.Context, key string, cluster *platfor
 func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) error {
 	var err error
 
+	log.Infof("cls: %s ensureCreateClusterCredential", cluster.Name)
 	cluster, err = c.ensureCreateClusterCredential(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("ensureCreateClusterCredential error: %w", err)
 	}
+	log.Infof("cls: %s GetProvider", cluster.Name)
 	provider, err := clusterprovider.GetProvider(cluster.Spec.Type)
 	if err != nil {
 		return err
 	}
+	log.Infof("cls: %s GetV1Cluster", cluster.Name)
 	clusterWrapper, err := clusterprovider.GetV1Cluster(ctx, c.platformClient, cluster, clusterprovider.AdminUsername)
 	if err != nil {
 		return err
 	}
 
+	log.Infof("cls: %s loop", cluster.Name)
 	for clusterWrapper.Status.Phase == platformv1.ClusterInitializing {
 		err = provider.OnCreate(ctx, clusterWrapper)
+		log.Infof("cls: %s OnCreate", cluster.Name)
 		if err != nil {
 			// Update status, ignore failure
 			_, _ = c.platformClient.ClusterCredentials().Update(ctx, clusterWrapper.ClusterCredential, metav1.UpdateOptions{})
 			_, _ = c.platformClient.Clusters().Update(ctx, clusterWrapper.Cluster, metav1.UpdateOptions{})
 			return err
 		}
+		log.Infof("cls: %s ClusterCredentials().Update", cluster.Name)
 		clusterWrapper.ClusterCredential, err = c.platformClient.ClusterCredentials().Update(ctx, clusterWrapper.ClusterCredential, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
+		log.Infof("cls: %s RegisterRestConfig, Clusters().Update", cluster.Name)
 		clusterWrapper.RegisterRestConfig(clusterWrapper.ClusterCredential.RESTConfig(cluster))
 		clusterWrapper.Cluster, err = c.platformClient.Clusters().Update(ctx, clusterWrapper.Cluster, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
 	}
-
+	log.Infof("cls: %s end", cluster.Name)
 	return nil
 }
 
