@@ -144,11 +144,13 @@ func (c *Controller) getPriority(item interface{}) int {
 	var key string
 	var ok bool
 	if key, ok = item.(string); !ok {
+		log.Infof("getPriority item.(string) failed, cls: %v", item)
 		return priorityRunning
 	}
 
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
+		log.Infof("getPriority SplitMetaNamespaceKey failed, cls: %v, err: %v", item, err)
 		return priorityRunning
 	}
 
@@ -160,23 +162,26 @@ func (c *Controller) getPriority(item interface{}) int {
 		return priorityRunning
 	}
 	if cluster == nil {
+		log.Infof("getPriority cluster == nil, cls: %v", item)
 		return priorityRunning
 	}
 
+	priority := priorityRunning
 	switch {
 	case cluster.Status.Phase == platformv1.ClusterPhase("Idling"):
-		return priorityIdling
+		priority = priorityIdling
 	case cluster.Status.Phase == platformv1.ClusterFailed:
-		return priorityFailed
+		priority = priorityFailed
 	case cluster.Status.Phase == platformv1.ClusterRunning:
-		return priorityRunning
+		priority = priorityRunning
 	case cluster.Status.Phase == platformv1.ClusterTerminating:
-		return priorityTerminating
+		priority = priorityTerminating
 	case cluster.Status.Phase == platformv1.ClusterInitializing:
-		return priorityInitializing
+		priority = priorityInitializing
 	}
+	log.Infof("getPriority item: %v, priority: %d", item, priority)
 
-	return priorityRunning
+	return priority
 }
 
 func (c *Controller) addCluster(obj interface{}) {
