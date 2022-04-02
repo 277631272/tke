@@ -34,6 +34,7 @@ import (
 	"tkestack.io/tke/pkg/platform/types"
 	v1 "tkestack.io/tke/pkg/platform/types/v1"
 	"tkestack.io/tke/pkg/platform/util/credential"
+	"tkestack.io/tke/pkg/util/log"
 )
 
 var (
@@ -112,6 +113,7 @@ func Providers() []string {
 
 // GetProvider returns provider by name
 func GetProvider(name string) (Provider, error) {
+	log.Infof("GetProvider Priority, name: %s", name)
 	providersMu.RLock()
 	provider, ok := providers[name]
 	providersMu.RUnlock()
@@ -161,10 +163,12 @@ func GetV1Cluster(ctx context.Context, platformClient platformversionedclient.Pl
 	result := new(v1.Cluster)
 	result.Cluster = cluster
 	result.IsCredentialChanged = false
+	log.Infof("GetV1Cluster cls: %s", cluster.Name)
 	provider, err := GetProvider(cluster.Spec.Type)
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("GetClusterCredentialV1 cls: %s", cluster.Name)
 	clusterCredential, err := credential.GetClusterCredentialV1(ctx, platformClient, cluster, username)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
