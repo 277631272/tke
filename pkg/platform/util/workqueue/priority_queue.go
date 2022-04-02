@@ -143,7 +143,8 @@ func (q *Type) Add(item interface{}) {
 	priority := q.getPriorityFunc(item)
 	priority = clipInt(priority, q.minPriority, q.maxPriority)
 	q.priorityQueue[priority] = append(q.priorityQueue[priority], item)
-	log.Infof("priorityQueue add, item: %v, priority: %d, queue len: %d", item, priority, q.lenNoLock())
+	log.Infof("priorityQueue add, item: %v, priority: %d, queue len: %d, initializing: %v, terminating: %v",
+		item, priority, q.lenNoLock(), q.priorityQueue[10], q.priorityQueue[8])
 	q.cond.Signal()
 }
 
@@ -200,7 +201,8 @@ func (q *Type) Get() (item interface{}, shutdown bool) {
 		log.Fatalf("Get: invalid queue, lenNoLock: %d, currentPriority: %d, currentPriority queue len: %d, priorityQueue: %v", q.lenNoLock(), currentPriority, len(q.priorityQueue[currentPriority]), q.priorityQueue)
 	}
 	item, q.priorityQueue[currentPriority] = q.priorityQueue[currentPriority][0], q.priorityQueue[currentPriority][1:]
-	log.Infof("priorityQueue get, item: %v, priority: %d, queue len: %d", item, currentPriority, q.lenNoLock())
+	log.Infof("priorityQueue get, item: %v, priority: %d, queue len: %d, initializing: %v, terminating: %v",
+		item, currentPriority, q.lenNoLock(), q.priorityQueue[10], q.priorityQueue[8])
 
 	q.metrics.get(item)
 
