@@ -113,7 +113,6 @@ func Providers() []string {
 
 // GetProvider returns provider by name
 func GetProvider(name string) (Provider, error) {
-	log.Infof("GetProvider Priority, name: %s", name)
 	providersMu.RLock()
 	provider, ok := providers[name]
 	providersMu.RUnlock()
@@ -173,12 +172,14 @@ func GetV1Cluster(ctx context.Context, platformClient platformversionedclient.Pl
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
 	}
+	log.Infof("provider.GetRestConfig, cls: %s", cluster.Name)
 	restConfig, err := provider.GetRestConfig(ctx, cluster, username)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
 	}
 	result.ClusterCredential = clusterCredential
 	result.RegisterRestConfig(restConfig)
+	log.Infof("GetV1Cluster end, cls: %s", cluster.Name)
 
 	return result, nil
 }

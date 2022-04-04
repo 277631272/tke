@@ -27,6 +27,7 @@ import (
 	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
 	"tkestack.io/tke/api/platform"
 	platformv1 "tkestack.io/tke/api/platform/v1"
+	"tkestack.io/tke/pkg/util/log"
 )
 
 // GetClusterCredential returns the cluster's credential
@@ -55,6 +56,7 @@ func GetClusterCredentialV1(ctx context.Context, client platformversionedclient.
 		err        error
 	)
 
+	log.Infof("cls: %s, GetClusterCredentialV1 begin", cluster.Name)
 	if cluster.Spec.ClusterCredentialRef != nil {
 		credential, err = client.ClusterCredentials().Get(ctx, cluster.Spec.ClusterCredentialRef.Name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
@@ -63,6 +65,7 @@ func GetClusterCredentialV1(ctx context.Context, client platformversionedclient.
 	} else if client != nil {
 		return nil, apierrors.NewNotFound(platform.Resource("ClusterCredential"), cluster.Name)
 	}
+	log.Infof("cls: %s, GetClusterCredentialV1 end", cluster.Name)
 
 	return credential, nil
 }
