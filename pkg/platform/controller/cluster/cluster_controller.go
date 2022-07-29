@@ -157,7 +157,7 @@ func (c *Controller) getPriority(item interface{}) int {
 		if apierrors.IsNotFound(err) {
 			log.Infof("getPriority item is not found, item: %v", item)
 		}
-		return priorityRunning
+		return priorityTerminating
 	}
 	if cluster == nil {
 		return priorityRunning
