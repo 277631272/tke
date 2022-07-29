@@ -343,6 +343,7 @@ func (c *Controller) syncCluster(key string) error {
 
 func (c *Controller) reconcile(ctx context.Context, key string, cluster *platformv1.Cluster) error {
 	var err error
+	log.Infof("reconcile cluster, cls: %s, Finalizers: %v", cluster.Name, cluster.Spec.Finalizers)
 
 	switch cluster.Status.Phase {
 	case platformv1.ClusterInitializing:
