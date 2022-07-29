@@ -89,11 +89,13 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 	cluster, err := d.clusterClient.Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
+			log.Infof("delete cluster, get cluster not found, cls: %s", clusterName)
 			return nil
 		}
 		return err
 	}
 	if cluster.DeletionTimestamp == nil {
+		log.Infof("delete cluster, DeletionTimestamp is nil, cls: %s", clusterName)
 		return nil
 	}
 
@@ -102,6 +104,7 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 	cluster, err = d.retryOnConflictError(ctx, cluster, d.updateClusterStatusFunc)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			log.Infof("delete cluster, retryOnConflictError, cls: %s", clusterName)
 			return nil
 		}
 		return err
@@ -109,11 +112,13 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 
 	// the latest view of the cluster asserts that cluster is no longer deleting..
 	if cluster.DeletionTimestamp.IsZero() {
+		log.Infof("delete cluster, DeletionTimestamp is zero, cls: %s", clusterName)
 		return nil
 	}
 
 	// Delete the cluster if it is already finalized.
 	if d.deleteClusterWhenDone && finalized(cluster) {
+		log.Infof("delete cluster, finalized is true, cls: %s", clusterName)
 		return d.deleteCluster(ctx, cluster)
 	}
 
@@ -130,6 +135,7 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 		// two controllers to do cluster deletion that share a common finalizer token it's
 		// possible that a not found could occur since the other controller would have finished the delete.
 		if errors.IsNotFound(err) {
+			log.Infof("delete cluster, retryOnConflictError2, cls: %s", clusterName)
 			return nil
 		}
 		return err
@@ -137,6 +143,7 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 
 	// Check if we can delete now.
 	if d.deleteClusterWhenDone && finalized(cluster) {
+		log.Infof("delete cluster, finalized2 is true, cls: %s", clusterName)
 		return d.deleteCluster(ctx, cluster)
 	}
 	return nil
@@ -144,6 +151,8 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 
 // Deletes the given cluster.
 func (d *clusterDeleter) deleteCluster(ctx context.Context, cluster *platformv1.Cluster) error {
+	log.Infof("deleteCluster action begin, cls: %s", cluster.Name)
+
 	var opts metav1.DeleteOptions
 	uid := cluster.UID
 	if len(uid) > 0 {
@@ -151,8 +160,10 @@ func (d *clusterDeleter) deleteCluster(ctx context.Context, cluster *platformv1.
 	}
 	err := d.clusterClient.Delete(ctx, cluster.Name, opts)
 	if err != nil && !errors.IsNotFound(err) {
+		log.Infof("deleteCluster failed, cls: %s, err: %v", cluster.Name, err)
 		return err
 	}
+	log.Infof("deleteCluster action end, cls: %s", cluster.Name)
 
 	return nil
 }
