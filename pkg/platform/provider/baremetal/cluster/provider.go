@@ -36,7 +36,6 @@ import (
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	"tkestack.io/tke/pkg/platform/types"
 	"tkestack.io/tke/pkg/spec"
-	"tkestack.io/tke/pkg/util/containerregistry"
 	"tkestack.io/tke/pkg/util/log"
 )
 
@@ -56,7 +55,7 @@ func RegisterProvider() {
 type Provider struct {
 	*clusterprovider.DelegateProvider
 
-	config *config.Config
+	Config *config.Config
 }
 
 var _ clusterprovider.Provider = &Provider{}
@@ -109,14 +108,16 @@ func NewProvider() (*Provider, error) {
 			p.EnsureKubeadmInitPhaseBootstrapToken,
 			p.EnsureKubeadmInitPhaseAddon,
 
-			p.EnsureGalaxy,
-			p.EnsureCilium,
-
 			p.EnsureJoinPhasePreflight,
 			p.EnsureJoinPhaseControlPlanePrepare,
 			p.EnsureJoinPhaseKubeletStart,
 			p.EnsureJoinPhaseControlPlaneJoinETCD,
 			p.EnsureJoinPhaseControlPlaneJoinUpdateStatus,
+
+			p.EnsureClusternetRegistration,
+
+			p.EnsureGalaxy,
+			p.EnsureCilium,
 
 			p.EnsurePatchAnnotation, // wait rest master ready
 			p.EnsureMarkControlPlane,
@@ -162,9 +163,7 @@ func NewProvider() (*Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.config = cfg
-
-	containerregistry.Init(cfg.Registry.Domain, cfg.Registry.Namespace)
+	p.Config = cfg
 
 	// Run for compatibility with installer.
 	// TODO: Installer reuse platform components
@@ -213,14 +212,14 @@ func (p *Provider) PreCreate(cluster *types.Cluster) error {
 		}
 	}
 
-	if p.config.AuditEnabled() {
+	if p.Config.AuditEnabled() {
 		if !cluster.AuthzWebhookEnabled() {
 			cluster.Spec.Features.AuthzWebhookAddr = &platform.AuthzWebhookAddr{Builtin: &platform.
 				BuiltinAuthzWebhookAddr{}}
 		}
 	}
 
-	if p.config.BusinessEnabled() {
+	if p.Config.BusinessEnabled() {
 		if !cluster.AuthzWebhookEnabled() {
 			cluster.Spec.Features.AuthzWebhookAddr = &platform.AuthzWebhookAddr{Builtin: &platform.
 				BuiltinAuthzWebhookAddr{}}
@@ -242,8 +241,8 @@ func (p *Provider) PreCreate(cluster *types.Cluster) error {
 	if !cluster.Spec.Features.EnableMetricsServer {
 		cluster.Spec.Features.SkipConditions = append(cluster.Spec.Features.SkipConditions, "EnsureMetricsServer")
 	}
-	if p.config.Feature.SkipConditions != nil {
-		cluster.Spec.Features.SkipConditions = append(cluster.Spec.Features.SkipConditions, p.config.Feature.SkipConditions...)
+	if p.Config.Feature.SkipConditions != nil {
+		cluster.Spec.Features.SkipConditions = append(cluster.Spec.Features.SkipConditions, p.Config.Feature.SkipConditions...)
 	}
 
 	if cluster.Spec.Etcd == nil {

@@ -368,8 +368,8 @@ func (t *TKE) initSteps() {
 			t.Para.Config.Monitor.InfluxDBMonitor.LocalInfluxDBMonitor != nil {
 			t.steps = append(t.steps, []types.Handler{
 				{
-					Name: "Install InfluxDB",
-					Func: t.installInfluxDB,
+					Name: "Install InfluxDB chart",
+					Func: t.installInfluxDBChart,
 				},
 			}...)
 		}
@@ -1886,28 +1886,71 @@ func (t *TKE) installTKEBusinessController(ctx context.Context) error {
 	})
 }
 
-func (t *TKE) installInfluxDB(ctx context.Context) error {
+func (t *TKE) installInfluxDBChart(ctx context.Context) error {
 
-	node, err := apiclient.GetNodeByMachineIP(ctx, t.globalClient, t.servers[0])
+	options, err := t.getInfluxDBOptions(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("get influxdb options failed: %v", err)
 	}
 
-	err = apiclient.CreateResourceWithDir(ctx, t.globalClient, "manifests/influxdb/*.yaml",
-		map[string]interface{}{
-			"Image":    images.Get().InfluxDB.FullName(),
-			"NodeName": node.Name,
-		})
-	if err != nil {
-		return err
+	influxDB := &types.PlatformApp{
+		HelmInstallOptions: &helmaction.InstallOptions{
+			Namespace:        t.namespace,
+			ReleaseName:      "influxdb",
+			Values:           options,
+			DependencyUpdate: false,
+			ChartPathOptions: helmaction.ChartPathOptions{},
+		},
+		LocalChartPath: constants.ChartDirName + "influxdb/",
+		Enable:         true,
+		ConditionFunc: func() (bool, error) {
+			ok, err := apiclient.CheckStatefulSet(ctx, t.globalClient, t.namespace, "influxdb")
+			if err != nil || !ok {
+				return false, nil
+			}
+			return ok, nil
+		},
 	}
-	return wait.PollImmediate(5*time.Second, 10*time.Minute, func() (bool, error) {
-		ok, err := apiclient.CheckStatefulSet(ctx, t.globalClient, t.namespace, "influxdb")
-		if err != nil || !ok {
-			return false, nil
+	return t.installPlatformApp(ctx, influxDB)
+}
+
+func (t *TKE) getInfluxDBOptions(ctx context.Context) (map[string]interface{}, error) {
+
+	options := map[string]interface{}{
+		"image": images.Get().InfluxDB.FullName(),
+	}
+
+	useCephRbd, useNFS := false, false
+	for _, platformApp := range t.Para.Config.PlatformApps {
+		if !platformApp.Enable || !platformApp.Installed {
+			continue
 		}
-		return ok, nil
-	})
+		if strings.EqualFold(platformApp.HelmInstallOptions.ReleaseName, constants.CephRBDChartReleaseName) {
+			useCephRbd = true
+			options["cephRbd"] = true
+			options["cephRbdPVCName"] = "ceph-rbd-influxdb-pvc"
+			options["cephRbdStorageClassName"] = constants.CephRBDStorageClassName
+			break
+		}
+		if strings.EqualFold(platformApp.HelmInstallOptions.ReleaseName, constants.NFSChartReleaseName) {
+			useNFS = true
+			options["nfs"] = true
+			options["nfsPVCName"] = "nfs-influxdb-pvc"
+			options["nfsStorageClassName"] = constants.NFSStorageClassName
+			break
+		}
+	}
+
+	if !(useCephRbd || useNFS) {
+		options["baremetalStorage"] = true
+		node, err := apiclient.GetNodeByMachineIP(ctx, t.globalClient, t.servers[0])
+		if err != nil {
+			return nil, err
+		}
+		options["nodeName"] = node.Name
+	}
+
+	return options, nil
 }
 
 func (t *TKE) installThanos(ctx context.Context) error {
@@ -2371,14 +2414,20 @@ func (t *TKE) preparePushImagesToTKERegistry(ctx context.Context) error {
 		t.Para.Config.Registry.Domain(),
 		constants.DefaultTeantID + "." + t.Para.Config.Registry.Domain(),
 	}
+
+	ip := t.servers[0]
+	if t.Para.Config.HA != nil && len(t.Para.Config.HA.VIP()) > 0 {
+		ip = t.Para.Config.HA.VIP()
+	}
+
 	for _, domain := range domains {
 		localHosts := hosts.LocalHosts{Host: domain, File: "hosts"}
-		err := localHosts.Set(t.servers[0])
+		err := localHosts.Set(ip)
 		if err != nil {
 			return err
 		}
 		localHosts.File = "/app/hosts"
-		err = localHosts.Set(t.servers[0])
+		err = localHosts.Set(ip)
 		if err != nil {
 			return err
 		}
@@ -2600,7 +2649,7 @@ func (t *TKE) dockerPush(tkeImages []string) error {
 		return err
 	}
 
-	manifestsChan := make(chan string, 10)
+	manifestsChan := make(chan string, 1)
 
 	for _, image := range tkeImages {
 		go func(image string) {
@@ -2743,6 +2792,11 @@ func (t *TKE) setGlobalClusterHosts(ctx context.Context) error {
 		t.Cluster.Spec.TenantID + "." + t.Para.Config.Registry.Domain(),
 	}
 
+	ip := t.Cluster.Spec.Machines[0].IP
+	if t.Para.Config.HA != nil && len(t.Para.Config.HA.VIP()) > 0 {
+		ip = t.Para.Config.HA.VIP()
+	}
+
 	for _, machine := range t.Cluster.Spec.Machines {
 		sshConfig := &ssh.Config{
 			User:       machine.Username,
@@ -2758,7 +2812,7 @@ func (t *TKE) setGlobalClusterHosts(ctx context.Context) error {
 		}
 		for _, one := range domains {
 			remoteHosts := hosts.RemoteHosts{Host: one, SSH: s}
-			err := remoteHosts.Set(t.Cluster.Spec.Machines[0].IP)
+			err := remoteHosts.Set(ip)
 			if err != nil {
 				return err
 			}

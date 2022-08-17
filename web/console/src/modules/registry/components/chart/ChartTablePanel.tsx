@@ -220,7 +220,7 @@ export class ChartTablePanel extends React.Component<RootProps, any> {
                 <Clip target="#pushHelmDir" className="copy-btn">
                   <Trans>复制</Trans>
                 </Clip>
-                <p id="pushHelmDir">{`$ helm push ./myapp ${this.props.route.queries['cgName']}`}</p>
+                <p id="pushHelmDir">{`$ helm cm-push ./myapp ${this.props.route.queries['cgName']}`}</p>
               </code>
             </li>
             <li>
@@ -231,7 +231,7 @@ export class ChartTablePanel extends React.Component<RootProps, any> {
                 <Clip target="#pushHelmTar" className="copy-btn">
                   <Trans>复制</Trans>
                 </Clip>
-                <p id="pushHelmTar">{`$ helm push myapp-1.0.1.tgz ${this.props.route.queries['cgName']}`}</p>
+                <p id="pushHelmTar">{`$ helm cm-push myapp-1.0.1.tgz ${this.props.route.queries['cgName']}`}</p>
               </code>
             </li>
             <li>
@@ -242,7 +242,7 @@ export class ChartTablePanel extends React.Component<RootProps, any> {
                 <Clip target="#downloadChart" className="copy-btn">
                   <Trans>复制</Trans>
                 </Clip>
-                <p id="downloadChart">{`$ helm fetch ${this.props.route.queries['cgName']}/myapp`}</p>
+                <p id="downloadChart">{`$ helm pull ${this.props.route.queries['cgName']}/myapp`}</p>
               </code>
             </li>
             <li>
@@ -253,7 +253,7 @@ export class ChartTablePanel extends React.Component<RootProps, any> {
                 <Clip target="#downloadSChart" className="copy-btn">
                   <Trans>复制</Trans>
                 </Clip>
-                <p id="downloadSChart">{`$ helm fetch ${this.props.route.queries['cgName']}/myapp --version 1.0.1`}</p>
+                <p id="downloadSChart">{`$ helm pull ${this.props.route.queries['cgName']}/myapp --version 1.0.1`}</p>
               </code>
             </li>
           </ul>

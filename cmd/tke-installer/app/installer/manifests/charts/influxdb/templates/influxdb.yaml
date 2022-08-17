@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: influxdb
+  namespace: tke
+  labels:
+    app: influxdb
+spec:
+  replicas: 1
+  serviceName: influxdb
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+      - name: influxdb
+        image: {{ .Values.image }}
+        livenessProbe:
+          tcpSocket:
+            port: 8086
+          initialDelaySeconds: 1
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 8086
+          initialDelaySeconds: 1
+          periodSeconds: 10
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/influxdb
+          subPath:
+{{- if .Values.baremetalStorage }}
+      nodeName: {{ .Values.nodeName }}
+{{- end }}
+      hostNetwork: true
+      volumes:
+      - name: data
+{{- if .Values.baremetalStorage }}
+        hostPath:
+          path: /var/lib/influxdb
+          type: DirectoryOrCreate
+{{- end }}
+{{- if .Values.cephRbd }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.cephRbdPVCName }}
+{{- end }}
+{{- if .Values.nfs }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.nfsPVCName }}
+{{- end }}
+{{- if .Values.cephRbd }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.cephRbdPVCName }}
+  namespace: tke
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 40Gi
+  storageClassName: {{ .Values.cephRbdStorageClassName }}
+{{- end }}
+{{- if .Values.nfs }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.nfsPVCName }}
+  namespace: tke
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 40Gi
+  storageClassName: {{ .Values.nfsStorageClassName }}
+{{- end }}

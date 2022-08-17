@@ -184,10 +184,15 @@ export class ResourceActionPanel extends React.Component<RootProps, ResouceActio
 
   /** render新建按钮 */
   private _renderCreateButton() {
-    const { subRoot } = this.props,
+    const { subRoot, namespaceList } = this.props,
       { resourceInfo } = subRoot;
 
-    const isShow = !isEmpty(resourceInfo) && resourceInfo.actionField && resourceInfo.actionField.create.isAvailable;
+    const isShow =
+      !isEmpty(resourceInfo) &&
+      resourceInfo.actionField &&
+      resourceInfo?.actionField?.create?.isAvailable &&
+      namespaceList?.data?.recordCount > 0;
+
     return isShow ? (
       <Button
         type="primary"
@@ -204,9 +209,15 @@ export class ResourceActionPanel extends React.Component<RootProps, ResouceActio
 
   /** action for create button */
   private _handleClickForCreate() {
-    const { route } = this.props,
+    const {
+        route,
+        subRoot: { resourceName }
+      } = this.props,
       urlParams = router.resolve(route);
-    router.navigate(Object.assign({}, urlParams, { mode: 'create' }), route.queries);
+
+    // 使用yaml创建的资源导航到apply
+    const mode = ['ingress'].includes(resourceName) ? 'apply' : 'create';
+    router.navigate(Object.assign({}, urlParams, { mode }), route.queries);
   }
 
   /** 生成命名空间选择列表 */
@@ -344,17 +355,16 @@ export class ResourceActionPanel extends React.Component<RootProps, ResouceActio
   private _handleClickForTagSearch(tags) {
     const finalTags = tags.filter(({ attr }) => attr);
 
-    if (finalTags.length <= 0) return;
-
-    const { actions, subRoot } = this.props,
-      { resourceOption } = subRoot,
-      { ffResourceList } = resourceOption;
-
-    // 这里是控制tagSearch的展示
     this.setState({
       searchBoxValues: finalTags,
       searchBoxLength: finalTags.length
     });
+
+    if (finalTags.length <= 0) return;
+
+    const { actions } = this.props;
+
+    // 这里是控制tagSearch的展示
 
     const resourceName = finalTags.find(({ attr: { key } }) => key === 'resourceName')?.values?.[0]?.name ?? '';
     const labelSelector = finalTags.find(({ attr: { key } }) => key === 'labelSelector')?.values?.[0]?.name;

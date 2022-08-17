@@ -37,6 +37,9 @@ type BaseComponents struct {
 	ProviderRes           containerregistry.Image
 	TKEGateway            containerregistry.Image
 
+	NginxIngress       containerregistry.Image
+	KebeWebhookCertgen containerregistry.Image
+
 	NFSProvisioner containerregistry.Image
 
 	CsiNodeDriverRegistrar containerregistry.Image
@@ -48,11 +51,10 @@ type BaseComponents struct {
 }
 
 type ExComponents struct {
-	Registry     containerregistry.Image
-	Busybox      containerregistry.Image
-	InfluxDB     containerregistry.Image
-	Thanos       containerregistry.Image
-	NginxIngress containerregistry.Image
+	Registry containerregistry.Image
+	Busybox  containerregistry.Image
+	InfluxDB containerregistry.Image
+	Thanos   containerregistry.Image
 
 	TKEBusinessAPI           containerregistry.Image
 	TKEBusinessController    containerregistry.Image
@@ -88,11 +90,10 @@ func (c Components) Get(name string) *containerregistry.Image {
 var Version = version.Get().GitVersion
 
 var exComponents = ExComponents{
-	Registry:     containerregistry.Image{Name: "registry", Tag: "2.7.1"},
-	Busybox:      containerregistry.Image{Name: "busybox", Tag: "1.31.1"},
-	InfluxDB:     containerregistry.Image{Name: "influxdb", Tag: "1.7.9"},
-	Thanos:       containerregistry.Image{Name: "thanos", Tag: "v0.15.0"},
-	NginxIngress: containerregistry.Image{Name: "ingress-nginx-controller", Tag: "v1.1.3"},
+	Registry: containerregistry.Image{Name: "registry", Tag: "2.7.1"},
+	Busybox:  containerregistry.Image{Name: "busybox", Tag: "1.31.1"},
+	InfluxDB: containerregistry.Image{Name: "influxdb", Tag: "1.7.9"},
+	Thanos:   containerregistry.Image{Name: "thanos", Tag: "v0.15.0"},
 
 	TKEBusinessAPI:           containerregistry.Image{Name: "tke-business-api", Tag: Version},
 	TKEBusinessController:    containerregistry.Image{Name: "tke-business-controller", Tag: Version},
@@ -116,8 +117,11 @@ var baseComponents = BaseComponents{
 	TKEPlatformController: containerregistry.Image{Name: "tke-platform-controller", Tag: Version},
 	TKERegistryAPI:        containerregistry.Image{Name: "tke-registry-api", Tag: Version},
 	TKERegistryController: containerregistry.Image{Name: "tke-registry-controller", Tag: Version},
-	ProviderRes:           containerregistry.Image{Name: "provider-res", Tag: "v1.21.4-3"},
+	ProviderRes:           containerregistry.Image{Name: "provider-res", Tag: "v1.21.4-4"},
 	TKEGateway:            containerregistry.Image{Name: "tke-gateway", Tag: Version},
+
+	NginxIngress:       containerregistry.Image{Name: "ingress-nginx-controller", Tag: "v1.1.3"},
+	KebeWebhookCertgen: containerregistry.Image{Name: "kube-webhook-certgen", Tag: "v1.1.1"},
 
 	NFSProvisioner: containerregistry.Image{Name: "nfs-subdir-external-provisioner", Tag: "v4.0.2"},
 

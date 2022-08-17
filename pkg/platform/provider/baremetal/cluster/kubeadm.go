@@ -34,6 +34,7 @@ import (
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/kubeadm"
 	v1 "tkestack.io/tke/pkg/platform/types/v1"
 	"tkestack.io/tke/pkg/util/apiclient"
+	"tkestack.io/tke/pkg/util/containerregistry"
 	"tkestack.io/tke/pkg/util/json"
 	"tkestack.io/tke/pkg/util/version"
 )
@@ -183,7 +184,7 @@ func (p *Provider) getClusterConfiguration(c *v1.Cluster) *kubeadmv1beta2.Cluste
 		DNS: kubeadmv1beta2.DNS{
 			Type: kubeadmv1beta2.CoreDNS,
 		},
-		ImageRepository: p.config.Registry.Prefix,
+		ImageRepository: containerregistry.GetPrefix(),
 		ClusterName:     c.Name,
 		FeatureGates: map[string]bool{
 			"IPv6DualStack": c.Cluster.Spec.Features.IPv6DualStack},
@@ -246,7 +247,7 @@ func (p *Provider) getAPIServerExtraArgs(c *v1.Cluster) map[string]string {
 	args := map[string]string{
 		"token-auth-file": constants.TokenFile,
 	}
-	if p.config.AuditEnabled() {
+	if p.Config.AuditEnabled() {
 		args["audit-policy-file"] = constants.KubernetesAuditPolicyConfigFile
 		args["audit-webhook-config-file"] = constants.KubernetesAuditWebhookConfigFile
 	}
@@ -259,7 +260,7 @@ func (p *Provider) getAPIServerExtraArgs(c *v1.Cluster) map[string]string {
 	}
 
 	utilruntime.Must(mergo.Merge(&args, c.Spec.APIServerExtraArgs))
-	utilruntime.Must(mergo.Merge(&args, p.config.APIServer.ExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, p.Config.APIServer.ExtraArgs))
 
 	return args
 }
@@ -287,7 +288,7 @@ func (p *Provider) getControllerManagerExtraArgs(c *v1.Cluster) map[string]strin
 	}
 
 	utilruntime.Must(mergo.Merge(&args, c.Spec.ControllerManagerExtraArgs))
-	utilruntime.Must(mergo.Merge(&args, p.config.ControllerManager.ExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, p.Config.ControllerManager.ExtraArgs))
 
 	return args
 }
@@ -303,7 +304,7 @@ func (p *Provider) getSchedulerExtraArgs(c *v1.Cluster) map[string]string {
 	}
 
 	utilruntime.Must(mergo.Merge(&args, c.Spec.SchedulerExtraArgs))
-	utilruntime.Must(mergo.Merge(&args, p.config.Scheduler.ExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, p.Config.Scheduler.ExtraArgs))
 
 	return args
 }
@@ -314,7 +315,7 @@ func (p *Provider) getKubeletExtraArgs(c *v1.Cluster) map[string]string {
 	}
 
 	utilruntime.Must(mergo.Merge(&args, c.Spec.KubeletExtraArgs))
-	utilruntime.Must(mergo.Merge(&args, p.config.Kubelet.ExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, p.Config.Kubelet.ExtraArgs))
 
 	return args
 }

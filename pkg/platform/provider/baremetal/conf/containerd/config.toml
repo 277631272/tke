@@ -17,6 +17,14 @@ state = "/run/containerd"
       conf_dir = "/etc/cni/net.d"
     [plugins."io.containerd.grpc.v1.cri".containerd]
       default_runtime_name="runc"
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+
       {{ if .IsGPU}}
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
@@ -33,3 +41,6 @@ state = "/run/containerd"
         [plugins."io.containerd.grpc.v1.cri".registry.configs."{{.}}".tls]
           insecure_skip_verify=true
         {{end}}
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."ccr.ccs.tencentyun.com"]
+          endpoint = ["http://mirrors.tke.com"]

@@ -120,10 +120,12 @@ const (
 	MetricsServerManifest = ManifestsDir + "metrics-server/metrics-server.yaml"
 	CiliumManifest        = SrcDir + "cilium/*.yaml"
 
-	KUBERNETES                   = 1
-	DNSIPIndex                   = 10
-	GPUQuotaAdmissionIPIndex     = 9
-	GPUQuotaAdmissionIPAnnotaion = platformv1.GroupName + "/gpu-quota-admission-ip"
+	KUBERNETES                    = 1
+	DNSIPIndex                    = 10
+	GPUQuotaAdmissionIPIndex      = 9
+	QGPUQuotaAdmissionIPIndex     = 8
+	GPUQuotaAdmissionIPAnnotaion  = platformv1.GroupName + "/gpu-quota-admission-ip"
+	QGPUQuotaAdmissionIPAnnotaion = platformv1.GroupName + "/qgpu-quota-admission-ip"
 
 	// RenewCertsTimeThreshold control how long time left to renew certs
 	RenewCertsTimeThreshold = 30 * 24 * time.Hour
@@ -131,7 +133,8 @@ const (
 	// MinNumCPU mininum cpu number.
 	MinNumCPU = 2
 
-	APIServerHostName = "api.tke.com"
+	APIServerHostName       = "api.tke.com"
+	MirrorsRegistryHostName = "mirrors.tke.com"
 
 	// include itself
 	NeedUpgradeCoreDNSLowerK8sVersion = "1.19.0"

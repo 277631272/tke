@@ -77,7 +77,51 @@ type ClusterMachine struct {
 	PassPhrase []byte
 	Labels     map[string]string
 	Taints     []corev1.Taint
+	Proxy      ClusterMachineProxy
 }
+
+// ClusterMachine is the proxy definition of ClusterMachine.
+type ClusterMachineProxy struct {
+	Type       ProxyType
+	IP         string
+	Port       int32
+	Username   string
+	Password   []byte
+	PrivateKey []byte
+	PassPhrase []byte
+}
+
+// ProxyType describes diffirent type of proxy
+type ProxyType string
+
+const (
+	// SSH jumper server proxy
+	SSHJumpServer ProxyType = "SSHJumpServer"
+	// SOCKS5 ProxyType = "SOCKS5"
+)
+
+const (
+	// RegistrationCommandAnno contains base64 registration command of cluster net
+	RegistrationCommandAnno = "tkestack.io/registration-command"
+	// AnywhereEdtionLabel describe which anywhere edition will be deployed
+	AnywhereEdtionLabel = "tkestack.io/anywhere-edtion"
+	// AnywhereSubscriptionNameAnno describe sub name
+	AnywhereSubscriptionNameAnno = "tkestack.io/anywhere-subscription-name"
+	// AnywhereSubscriptionNameAnno describe sub namespace
+	AnywhereSubscriptionNamespaceAnno = "tkestack.io/anywhere-subscription-namespace"
+	// AnywhereLocalizationsAnno contains base64 localizations json data
+	AnywhereLocalizationsAnno = "tkestack.io/anywhere-localizations"
+	// AnywhereMachinesAnno contains base64 machines json data
+	AnywhereMachinesAnno = "tkestack.io/anywhere-machines"
+	// ClusterNameLable contains related cluster's name for no-cluster resources
+	ClusterNameLable = "tkestack.io/cluster-name"
+	// HubAPIServerAnno describe hub cluster api server url
+	HubAPIServerAnno = "tkestack.io/hub-api-server"
+	// cluster credential token
+	CredentialTokenAnno = "tkestack.io/credential-token"
+	// AnywhereApplicationAnno contains base64 application json data
+	AnywhereApplicationAnno = "tkestack.io/anywhere-application"
+)
 
 // KubeVendorType describe the kubernetes provider of the cluster
 // ref https://github.com/open-cluster-management/multicloud-operators-foundation/blob/e94b719de6d5f3541e948dd70ad8f1ff748aa452/pkg/apis/internal.open-cluster-management.io/v1beta1/clusterinfo_types.go#L137
