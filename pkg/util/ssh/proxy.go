@@ -19,11 +19,16 @@
 package ssh
 
 import (
+	"fmt"
 	"net"
+	"time"
+
+	"tkestack.io/tke/pkg/util/log"
 )
 
 type Proxy interface {
-	ProxyConn(targetAddr string) (net.Conn, func(), error)
+	ProxyConn(targetAddr string) (conn net.Conn, closer func(), err error)
+	CheckTunnel() (err error)
 }
 
 var _ Proxy = JumpServer{}
@@ -39,18 +44,53 @@ func (sj JumpServer) ProxyConn(targetAddr string) (net.Conn, func(), error) {
 	}
 	// do not use sudo in jump server
 	sshstruct.Sudo = false
+	if sshstruct.DialTimeOut == 0 {
+		sshstruct.DialTimeOut = time.Second
+	}
 	jumperClient, closer, err := sshstruct.newClient()
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, err := jumperClient.Dial("tcp", targetAddr)
-	if err != nil {
-		closer()
-		return nil, nil, err
+	type result struct {
+		conn net.Conn
+		err  error
 	}
-	return conn,
-		func() {
+	ch := make(chan result, 1)
+	go func() {
+		conn, err := jumperClient.Dial("tcp", targetAddr)
+		if err != nil {
 			closer()
-		},
-		nil
+			log.Errorf("proxy %s dial %s failed: %v", sj.Host, targetAddr)
+		} else {
+			log.Debugf("proxy %s dial %s sucess", sj.Host, targetAddr)
+		}
+		r := result{conn: conn, err: err}
+		ch <- r
+	}()
+	select {
+	case r := <-ch:
+		return r.conn,
+			func() {
+				closer()
+			},
+			r.err
+	case <-time.After(sshstruct.DialTimeOut):
+		return nil, nil, fmt.Errorf("proxy %s dial %s time out in %s", sshstruct.Host, targetAddr, sshstruct.DialTimeOut.String())
+	}
+}
+
+func (sj JumpServer) CheckTunnel() error {
+	sshstruct, err := New(&sj.Config)
+	if err != nil {
+		return err
+	}
+	if sshstruct.DialTimeOut == 0 {
+		sshstruct.DialTimeOut = time.Second
+	}
+	_, closer, err := sshstruct.newClient()
+	if err != nil {
+		return err
+	}
+	closer()
+	return nil
 }
