@@ -22,9 +22,14 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"net"
+	"strconv"
 	"strings"
 	"time"
+
+	appsv1alpha1 "github.com/clusternet/apis/apps/v1alpha1"
+	"tkestack.io/tke/pkg/mesh/util/json"
 
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -40,6 +45,7 @@ import (
 	"tkestack.io/tke/pkg/platform/util"
 	vendor "tkestack.io/tke/pkg/platform/util/kubevendor"
 	"tkestack.io/tke/pkg/spec"
+	pkgutil "tkestack.io/tke/pkg/util"
 	"tkestack.io/tke/pkg/util/ipallocator"
 	"tkestack.io/tke/pkg/util/log"
 	utilmath "tkestack.io/tke/pkg/util/math"
@@ -51,6 +57,25 @@ import (
 var (
 	nodePodNumAvails        = []int32{16, 32, 64, 128, 256}
 	clusterServiceNumAvails = []int32{32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768}
+	supportedOSList         = []string{}
+	reservePorts            = []int{
+		// kube-apiserver
+		6443,
+		// etcd
+		2379, 2380,
+		// kubelet
+		10250, 10251, 10252, 10253, 10254, 10255,
+		// ingress
+		80, 443, 8181,
+		// node exporter
+		9100,
+		// tke-gateway
+		31180, 31443,
+		// tke-auth
+		31138,
+		// influxdb & thanos-reciever
+		30086,
+	}
 )
 
 // ValidateCluster validates a given Cluster.
@@ -104,8 +129,9 @@ func ValidatClusterSpec(platformClient platformv1client.PlatformV1Interface, clu
 	allErrs := field.ErrorList{}
 
 	allErrs = append(allErrs, ValidateClusterSpecVersion(platformClient, clusterName, cls.Spec.Version, fldPath.Child("version"), phase)...)
-	allErrs = append(allErrs, ValidateCIDRs(&cls.Spec, fldPath)...)
+	allErrs = append(allErrs, ValidateCIDRs(cls, fldPath)...)
 	allErrs = append(allErrs, ValidateClusterProperty(&cls.Spec, fldPath.Child("properties"))...)
+	allErrs = append(allErrs, ValidateStorage(cls, fldPath)...)
 	if validateMachine {
 		allErrs = append(allErrs, ValidateClusterMachines(cls, fldPath.Child("machines"))...)
 	}
@@ -152,10 +178,22 @@ func ValidateClusterMachines(cls *platform.Cluster, fldPath *field.Path) field.E
 	proxyErrs := field.ErrorList{}
 	sshErrs := field.ErrorList{}
 	timeErrs := field.ErrorList{}
+	osErrs := field.ErrorList{}
+	mcReErrs := field.ErrorList{}
+	routeErrs := field.ErrorList{}
+	portsErrs := field.ErrorList{}
+	firewallErrs := field.ErrorList{}
+	selinuxErrs := field.ErrorList{}
 
 	proxyResult := TKEValidateResult{}
 	sshResult := TKEValidateResult{}
 	timeResult := TKEValidateResult{}
+	osResult := TKEValidateResult{}
+	mcReResult := TKEValidateResult{}
+	routeResult := TKEValidateResult{}
+	portsResult := TKEValidateResult{}
+	firewallResult := TKEValidateResult{}
+	selinuxResult := TKEValidateResult{}
 
 	var masters []*ssh.SSH
 	for i, one := range cls.Spec.Machines {
@@ -192,6 +230,28 @@ func ValidateClusterMachines(cls *platform.Cluster, fldPath *field.Path) field.E
 	if len(masters) == len(cls.Spec.Machines) {
 		timeErrs = ValidateMasterTimeOffset(fldPath, masters)
 		timeResult.Checked = true
+
+		if len(supportedOSList) != 0 {
+			osErrs = ValidateOSVersion(fldPath, masters)
+			osResult.Checked = true
+		} else {
+			log.Warn("skip validate OS since supported OS list is empty")
+		}
+
+		mcReErrs = ValidateMachineResource(fldPath, masters)
+		mcReResult.Checked = true
+
+		routeErrs = ValidateDefaultRoute(fldPath, masters, cls.Spec.NetworkDevice)
+		routeResult.Checked = true
+
+		portsErrs = ValidateReservePorts(fldPath, masters)
+		portsResult.Checked = true
+
+		firewallErrs = ValidateFirewall(fldPath, masters)
+		firewallResult.Checked = true
+
+		selinuxErrs = ValidateSelinux(fldPath, masters)
+		selinuxResult.Checked = true
 	}
 	if _, ok := cls.Annotations[platform.AnywhereValidateAnno]; ok {
 		proxyResult.Name = AnywhereValidateItemTunnelConnectivity
@@ -206,11 +266,50 @@ func ValidateClusterMachines(cls *platform.Cluster, fldPath *field.Path) field.E
 		timeResult.Description = fmt.Sprintf("Verify Clock Gap between Master nodes is not More than %d Second(s)", MaxTimeOffset)
 		timeResult.ErrorList = timeErrs
 
-		allErrs = append(allErrs, proxyResult.ToFieldError(), sshResult.ToFieldError(), timeResult.ToFieldError())
+		osResult.Name = AnywhereValidateItemOSVersion
+		osResult.Description = "Verify Target Machine OS"
+		osResult.ErrorList = osErrs
+
+		mcReResult.Name = AnywhereValidateItemMachineResource
+		mcReResult.Description = "Verify Target Machine Resource"
+		mcReResult.ErrorList = mcReErrs
+
+		routeResult.Name = AnywhereValidateItemDefaultRoute
+		routeResult.Description = "Verify Default Route Network Interface"
+		routeResult.ErrorList = routeErrs
+
+		portsResult.Name = AnywhereValidateItemReservePorts
+		portsResult.Description = "Verify ReservePorts Status"
+		portsResult.ErrorList = portsErrs
+
+		firewallResult.Name = AnywhereValidateItemFirewall
+		firewallResult.Description = "Verify Firewall Status"
+		firewallResult.ErrorList = firewallErrs
+
+		selinuxResult.Name = AnywhereValidateItemSelinux
+		selinuxResult.Description = "Verify Selinux"
+		selinuxResult.ErrorList = selinuxErrs
+
+		allErrs = append(allErrs,
+			proxyResult.ToFieldError(),
+			sshResult.ToFieldError(),
+			timeResult.ToFieldError(),
+			osResult.ToFieldError(),
+			mcReResult.ToFieldError(),
+			routeResult.ToFieldError(),
+			portsResult.ToFieldError(),
+			firewallResult.ToFieldError(),
+			selinuxResult.ToFieldError())
 	} else {
 		allErrs = append(allErrs, proxyErrs...)
 		allErrs = append(allErrs, sshErrs...)
 		allErrs = append(allErrs, timeErrs...)
+		allErrs = append(allErrs, osErrs...)
+		allErrs = append(allErrs, mcReErrs...)
+		allErrs = append(allErrs, routeErrs...)
+		allErrs = append(allErrs, portsErrs...)
+		allErrs = append(allErrs, firewallErrs...)
+		allErrs = append(allErrs, selinuxErrs...)
 	}
 
 	return allErrs
@@ -237,6 +336,272 @@ func ValidateProxy(fldPath *field.Path, proxy ssh.Proxy) field.ErrorList {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("proxy"), "", err.Error()))
 	}
 	return allErrs
+}
+
+func ValidateOSVersion(fldPath *field.Path, sshs []*ssh.SSH) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for i, one := range sshs {
+		os, err := ssh.OSVersion(one)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		if !pkgutil.InStringSlice(supportedOSList, os) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("target os %s is not in expected os list %v", os, supportedOSList)))
+		}
+	}
+	return allErrs
+}
+
+func ValidateReservePorts(fldPath *field.Path, sshs []*ssh.SSH) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for i, one := range sshs {
+		isInused, message, err := ssh.ReservePorts(one, "127.0.0.1", reservePorts)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+		} else if isInused {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, message))
+		}
+	}
+	return allErrs
+}
+
+func ValidateStorage(cls *platform.Cluster, fld *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allErrs = append(allErrs, ValidateNFS(cls, fld)...)
+	allErrs = append(allErrs, ValidateCephFS(cls, fld)...)
+
+	if _, ok := cls.Annotations[platform.AnywhereValidateAnno]; ok {
+		storageResult := TKEValidateResult{}
+		storageResult.Checked = true
+		storageResult.Name = AnywhereValidateItemStorage
+		storageResult.Description = "Validate Storage Info"
+		storageResult.ErrorList = allErrs
+		return field.ErrorList{storageResult.ToFieldError()}
+	}
+
+	return allErrs
+}
+
+func ValidateNFS(cls *platform.Cluster, fld *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if cls.Annotations[platformv1.AnywhereLocalizationsAnno] == "" {
+		return nil
+	}
+
+	localizationsJSON, err := base64.StdEncoding.DecodeString(cls.Annotations[platformv1.AnywhereLocalizationsAnno])
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fld, err, "decode error"))
+		return allErrs
+	}
+	var storageInfo *StorageInfo
+	storageInfo, err = GetStorageInfo(localizationsJSON)
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fld, storageInfo, err.Error()))
+		return allErrs
+	}
+	if storageInfo == nil || !storageInfo.EnableNFS {
+		return nil
+	}
+
+	machine, err := cls.Spec.Machines[0].SSH()
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fld, err, "ssh machine failed"))
+	}
+	nfsServer := storageInfo.Nfs.Server
+	nfsPath := storageInfo.Nfs.Path
+	err = ssh.CheckNFS(machine, nfsServer, nfsPath)
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fld, err, "check nfs failed"))
+	}
+
+	return allErrs
+}
+
+func ValidateCephFS(cls *platform.Cluster, fld *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if cls.Annotations[platformv1.AnywhereLocalizationsAnno] == "" {
+		return nil
+	}
+
+	localizationsJSON, err := base64.StdEncoding.DecodeString(cls.Annotations[platformv1.AnywhereLocalizationsAnno])
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fld, err, "decode error"))
+		return allErrs
+	}
+
+	var storageInfo *StorageInfo
+	storageInfo, err = GetStorageInfo(localizationsJSON)
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fld, storageInfo, err.Error()))
+		return allErrs
+	}
+	if storageInfo == nil || !storageInfo.EnableCephfs {
+		return nil
+	}
+
+	for _, host := range storageInfo.CsiConfig.Monitors {
+		arr := strings.SplitN(host, ":", 2)
+		if len(arr) != 2 {
+			allErrs = append(allErrs, field.Invalid(fld, host, "invalid host format"))
+			continue
+		}
+
+		ip, port := arr[0], arr[1]
+		p, err := strconv.Atoi(port)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fld, err, "convert port error"))
+			continue
+		}
+
+		machine, err := cls.Spec.Machines[0].SSH()
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fld, err, "ssh machine failed"))
+		}
+
+		isInused, _, err := ssh.ReservePorts(machine, ip, []int{p})
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fld, fmt.Sprintf("ceph IP: %s, port: %v", ip, p), fmt.Sprintf("check ceph connection failed: %v", err)))
+		} else if !isInused {
+			allErrs = append(allErrs, field.Invalid(fld, fmt.Sprintf("ceph IP: %s, port: %v", ip, p), "cannot connect given ceph addr"))
+		}
+	}
+	return allErrs
+}
+
+func GetStorageInfo(annoData []byte) (*StorageInfo, error) {
+	localizations := new(appsv1alpha1.LocalizationList)
+	err := json.Unmarshal(annoData, localizations)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &StorageInfo{}
+
+	for _, item := range localizations.Items {
+		if item.ObjectMeta.Name != "tke-storage" {
+			continue
+		}
+		n := len(item.Spec.Overrides)
+		if n == 0 {
+			return nil, nil
+		}
+		value := &StorageOverrideValue{}
+		err = json.Unmarshal([]byte(item.Spec.Overrides[n-1].Value), value)
+		if err != nil {
+			return nil, err
+		}
+		res.EnableNFS = value.Global.EnableNFS
+		res.Nfs.Server = value.NfsSubdirExternalProvisioner.Nfs.Server
+		res.Nfs.Path = value.NfsSubdirExternalProvisioner.Nfs.Path
+		res.EnableCephfs = value.Global.EnableCephFS
+		for _, cfg := range value.CephCsiCephfs.CsiConfig {
+			res.CsiConfig.Monitors = append(res.CsiConfig.Monitors, cfg.Monitors...)
+		}
+		return res, nil
+	}
+	return nil, nil
+}
+
+func ValidateFirewall(fldPath *field.Path, sshs []*ssh.SSH) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for i, one := range sshs {
+		running, err := ssh.FirewallEnabled(one)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		if running {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("target host %s firewall is running, please disable the firewall", one.Host)))
+		}
+	}
+	return allErrs
+}
+
+func ValidateSelinux(fldPath *field.Path, sshs []*ssh.SSH) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for i, one := range sshs {
+		enabled, err := ssh.SelinuxEnabled(one)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		if enabled {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("target host %s selinux is enabled, please disable the selinux", one.Host)))
+		}
+	}
+	return allErrs
+}
+
+func ValidateDefaultRoute(fldPath *field.Path, sshs []*ssh.SSH, expectedNetInterface string) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for i, one := range sshs {
+		defaultRouteIP := ssh.GetDefaultRouteIP(one)
+		if defaultRouteIP != one.Host {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("host IP %s is not default route IP %s", one.Host, defaultRouteIP)))
+		}
+		defaultRouteInterface := ssh.GetDefaultRouteInterface(one)
+		if defaultRouteInterface != expectedNetInterface {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), expectedNetInterface,
+				fmt.Sprintf("%s is not default route interface %s", defaultRouteInterface, expectedNetInterface)))
+		}
+	}
+	return allErrs
+}
+
+func ValidateMachineResource(fldPath *field.Path, sshs []*ssh.SSH) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for i, one := range sshs {
+		size, err := ssh.DiskAvail(one, MachineResourceRequstDiskPath)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		if size < MachineResourceRequstDiskSpace {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("%s disk space %d GiB is smaller than request size %d GiB", MachineResourceRequstDiskPath, size, MachineResourceRequstDiskSpace)))
+		}
+		size, err = ssh.DiskAvail(one, MachineResourceRequstLogDiskPath)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		if size < MachineResourceRequstLogDiskSpace {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("%s disk space %d GiB is smaller than request size %d GiB", MachineResourceRequstLogDiskPath, size, MachineResourceRequstLogDiskSpace)))
+		}
+		cpuNum, err := ssh.NumCPU(one)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		if cpuNum < MachineResourceRequstCPU {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("cpu number %d is smaller than request %d", cpuNum, MachineResourceRequstCPU)))
+		}
+		memInBytes, err := ssh.MemoryCapacity(one)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host, err.Error()))
+			continue
+		}
+		memInGiB := math.Ceil(float64(memInBytes) / 1024 / 1024 / 1024)
+		if memInGiB < MachineResourceRequstMemory {
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(i), one.Host,
+				fmt.Sprintf("memory %d GiB is smaller than request %d GiB", int(memInGiB), MachineResourceRequstMemory)))
+		}
+	}
+
+	return allErrs
+}
+
+func RegisterSupportedOSList(list []string) {
+	supportedOSList = list
 }
 
 // ValidateMasterTimeOffset validates a given master time offset.
@@ -306,13 +671,14 @@ func validateKubevendor(srcKubevendor, dstKubevendor platformv1.KubeVendorType) 
 }
 
 // ValidateCIDRs validates clusterCIDR and serviceCIDR.
-func ValidateCIDRs(spec *platform.ClusterSpec, specPath *field.Path) field.ErrorList {
+func ValidateCIDRs(cls *platform.Cluster, specPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+	result := TKEValidateResult{}
 	var clusterCIDR, serviceCIDR *net.IPNet
 
 	checkFunc := func(path *field.Path, cidr string) {
 		cidrs := strings.Split(cidr, ",")
-		dualStackEnabled := spec.Features.IPv6DualStack
+		dualStackEnabled := cls.Spec.Features.IPv6DualStack
 		switch {
 		// if DualStack only valid one cidr or two cidrs with one of each IP family
 		case dualStackEnabled && len(cidrs) > 2:
@@ -334,6 +700,13 @@ func ValidateCIDRs(spec *platform.ClusterSpec, specPath *field.Path) field.Error
 			}
 			if path == specPath.Child("clusterCIDR") {
 				clusterCIDR = cidrX
+				for i, mc := range cls.Spec.Machines {
+					if clusterCIDR.Contains(net.ParseIP(mc.IP)) {
+						allErrs = append(allErrs, field.Invalid(path.Index(i), cidr,
+							fmt.Sprintf("cannot use CIDR %s, since this CIDR contains node IP %s", cidr, mc.IP)))
+					}
+
+				}
 			} else {
 				serviceCIDR = cidrX
 			}
@@ -341,7 +714,7 @@ func ValidateCIDRs(spec *platform.ClusterSpec, specPath *field.Path) field.Error
 	}
 
 	fldPath := specPath.Child("clusterCIDR")
-	cidr := spec.ClusterCIDR
+	cidr := cls.Spec.ClusterCIDR
 	if len(cidr) == 0 {
 		allErrs = append(allErrs, field.Invalid(fldPath, cidr, "ClusterCIDR is empty string"))
 	} else {
@@ -349,8 +722,8 @@ func ValidateCIDRs(spec *platform.ClusterSpec, specPath *field.Path) field.Error
 	}
 
 	fldPath = specPath.Child("serviceCIDR")
-	if spec.ServiceCIDR != nil {
-		cidr = *spec.ServiceCIDR
+	if cls.Spec.ServiceCIDR != nil {
+		cidr = *cls.Spec.ServiceCIDR
 		if len(cidr) == 0 {
 			allErrs = append(allErrs, field.Invalid(fldPath, cidr, "ServiceCIDR is empty string"))
 		} else {
@@ -367,6 +740,15 @@ func ValidateCIDRs(spec *platform.ClusterSpec, specPath *field.Path) field.Error
 		}
 	}
 
+	if _, ok := cls.Annotations[platform.AnywhereValidateAnno]; ok {
+		result.Name = AnywhereValidateItemHostNetOverlapping
+		result.Description = "Verify Node IP(s) and CIDR Config"
+		result.ErrorList = allErrs
+		result.Checked = true
+
+		return field.ErrorList{result.ToFieldError()}
+
+	}
 	return allErrs
 }
 
