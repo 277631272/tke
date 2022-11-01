@@ -45,6 +45,8 @@ import (
 	fakenotifyv1 "tkestack.io/tke/api/client/clientset/versioned/typed/notify/v1/fake"
 	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
 	fakeplatformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1/fake"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	fakeplatformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2/fake"
 	registryv1 "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	fakeregistryv1 "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1/fake"
 )
@@ -142,6 +144,11 @@ func (c *Clientset) NotifyV1() notifyv1.NotifyV1Interface {
 // PlatformV1 retrieves the PlatformV1Client
 func (c *Clientset) PlatformV1() platformv1.PlatformV1Interface {
 	return &fakeplatformv1.FakePlatformV1{Fake: &c.Fake}
+}
+
+// PlatformV2 retrieves the PlatformV2Client
+func (c *Clientset) PlatformV2() platformv2.PlatformV2Interface {
+	return &fakeplatformv2.FakePlatformV2{Fake: &c.Fake}
 }
 
 // RegistryV1 retrieves the RegistryV1Client
