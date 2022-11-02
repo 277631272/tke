@@ -34,18 +34,18 @@ import (
 	restclient "k8s.io/client-go/rest"
 	platforminternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 )
 
 // APIServerLocationByCluster returns a URL and transport which one can use to
 // send traffic for the specified cluster api server.
-func APIServerLocationByCluster(ctx context.Context, cluster *platformv1.Cluster) (*url.URL, http.RoundTripper, string, error) {
+func APIServerLocationByCluster(ctx context.Context, cluster *platformv2.Cluster) (*url.URL, http.RoundTripper, string, error) {
 	username, tenantID := authentication.UsernameAndTenantID(ctx)
 	if len(tenantID) > 0 && cluster.Spec.TenantID != tenantID {
 		return nil, nil, "", errors.NewNotFound(platform.Resource("clusters"), cluster.ObjectMeta.Name)
 	}
-	if cluster.Status.Phase != platformv1.ClusterRunning {
+	if cluster.Status.Phase != platformv2.ClusterRunning {
 		return nil, nil, "", errors.NewServiceUnavailable(fmt.Sprintf("cluster %s status is abnormal", cluster.ObjectMeta.Name))
 	}
 
@@ -100,13 +100,13 @@ func APIServerLocation(ctx context.Context, platformClient platforminternalclien
 		return nil, nil, "", err
 	}
 
-	clusterv1 := &platformv1.Cluster{}
-	err = platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, clusterv1, nil)
+	clusterv2 := &platformv2.Cluster{}
+	err = platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, clusterv2, nil)
 	if err != nil {
 		return nil, nil, "", errors.NewInternalError(err)
 	}
 
-	location, transport, token, err := APIServerLocationByCluster(ctx, clusterv1)
+	location, transport, token, err := APIServerLocationByCluster(ctx, clusterv2)
 	if err != nil {
 		return nil, nil, "", err
 	}
