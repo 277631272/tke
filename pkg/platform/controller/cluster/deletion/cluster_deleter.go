@@ -27,8 +27,8 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	v1clientset "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	v2clientset "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	"tkestack.io/tke/pkg/util/log"
 )
@@ -39,9 +39,9 @@ type ClusterDeleterInterface interface {
 }
 
 // NewClusterDeleter creates the clusterDeleter object and returns it.
-func NewClusterDeleter(clusterClient v1clientset.ClusterInterface,
-	platformClient v1clientset.PlatformV1Interface,
-	finalizerToken platformv1.FinalizerName,
+func NewClusterDeleter(clusterClient v2clientset.ClusterInterface,
+	platformClient v2clientset.PlatformV2Interface,
+	finalizerToken platformv2.FinalizerName,
 	deleteClusterWhenDone bool) ClusterDeleterInterface {
 	d := &clusterDeleter{
 		clusterClient:         clusterClient,
@@ -57,21 +57,22 @@ var _ ClusterDeleterInterface = &clusterDeleter{}
 // clusterDeleter is used to delete all resources in a given cluster.
 type clusterDeleter struct {
 	// Client to manipulate the cluster.
-	clusterClient  v1clientset.ClusterInterface
-	platformClient v1clientset.PlatformV1Interface
+	clusterClient  v2clientset.ClusterInterface
+	platformClient v2clientset.PlatformV2Interface
 	// The finalizer token that should be removed from the cluster
 	// when all resources in that cluster have been deleted.
-	finalizerToken platformv1.FinalizerName
+	finalizerToken platformv2.FinalizerName
 	// Also delete the cluster when all resources in the cluster have been deleted.
 	deleteClusterWhenDone bool
 }
 
 // Delete deletes all resources in the given cluster.
 // Before deleting resources:
-// * It ensures that deletion timestamp is set on the
-//   cluster (does nothing if deletion timestamp is missing).
-// * Verifies that the cluster is in the "terminating" phase
-//   (updates the cluster phase if it is not yet marked terminating)
+//   - It ensures that deletion timestamp is set on the
+//     cluster (does nothing if deletion timestamp is missing).
+//   - Verifies that the cluster is in the "terminating" phase
+//     (updates the cluster phase if it is not yet marked terminating)
+//
 // After deleting the resources:
 // * It removes finalizer token from the given cluster.
 // * Deletes the cluster if deleteClusterWhenDone is true.
@@ -143,7 +144,7 @@ func (d *clusterDeleter) Delete(ctx context.Context, clusterName string) error {
 }
 
 // Deletes the given cluster.
-func (d *clusterDeleter) deleteCluster(ctx context.Context, cluster *platformv1.Cluster) error {
+func (d *clusterDeleter) deleteCluster(ctx context.Context, cluster *platformv2.Cluster) error {
 	var opts metav1.DeleteOptions
 	uid := cluster.UID
 	if len(uid) > 0 {
@@ -158,12 +159,12 @@ func (d *clusterDeleter) deleteCluster(ctx context.Context, cluster *platformv1.
 }
 
 // updateClusterFunc is a function that makes an update to a namespace
-type updateClusterFunc func(ctx context.Context, cluster *platformv1.Cluster) (*platformv1.Cluster, error)
+type updateClusterFunc func(ctx context.Context, cluster *platformv2.Cluster) (*platformv2.Cluster, error)
 
 // retryOnConflictError retries the specified fn if there was a conflict error
 // it will return an error if the UID for an object changes across retry operations.
 // TODO RetryOnConflict should be a generic concept in client code
-func (d *clusterDeleter) retryOnConflictError(ctx context.Context, cluster *platformv1.Cluster, fn updateClusterFunc) (result *platformv1.Cluster, err error) {
+func (d *clusterDeleter) retryOnConflictError(ctx context.Context, cluster *platformv2.Cluster, fn updateClusterFunc) (result *platformv2.Cluster, err error) {
 	latestCluster := cluster
 	for {
 		result, err = fn(ctx, latestCluster)
@@ -185,25 +186,25 @@ func (d *clusterDeleter) retryOnConflictError(ctx context.Context, cluster *plat
 }
 
 // updateClusterStatusFunc will verify that the status of the cluster is correct
-func (d *clusterDeleter) updateClusterStatusFunc(ctx context.Context, cluster *platformv1.Cluster) (*platformv1.Cluster, error) {
-	if cluster.DeletionTimestamp.IsZero() || cluster.Status.Phase == platformv1.ClusterTerminating {
+func (d *clusterDeleter) updateClusterStatusFunc(ctx context.Context, cluster *platformv2.Cluster) (*platformv2.Cluster, error) {
+	if cluster.DeletionTimestamp.IsZero() || cluster.Status.Phase == platformv2.ClusterTerminating {
 		return cluster, nil
 	}
-	newCluster := platformv1.Cluster{}
+	newCluster := platformv2.Cluster{}
 	newCluster.ObjectMeta = cluster.ObjectMeta
 	newCluster.Status = cluster.Status
-	newCluster.Status.Phase = platformv1.ClusterTerminating
+	newCluster.Status.Phase = platformv2.ClusterTerminating
 	return d.clusterClient.UpdateStatus(ctx, &newCluster, metav1.UpdateOptions{})
 }
 
 // finalized returns true if the cluster.Spec.Finalizers is an empty list
-func finalized(cluster *platformv1.Cluster) bool {
+func finalized(cluster *platformv2.Cluster) bool {
 	return len(cluster.Spec.Finalizers) == 0
 }
 
 // finalizeCluster removes the specified finalizerToken and finalizes the cluster
-func (d *clusterDeleter) finalizeCluster(ctx context.Context, cluster *platformv1.Cluster) (*platformv1.Cluster, error) {
-	clusterFinalize := platformv1.Cluster{}
+func (d *clusterDeleter) finalizeCluster(ctx context.Context, cluster *platformv2.Cluster) (*platformv2.Cluster, error) {
+	clusterFinalize := platformv2.Cluster{}
 	clusterFinalize.ObjectMeta = cluster.ObjectMeta
 	clusterFinalize.Spec = cluster.Spec
 
@@ -213,12 +214,12 @@ func (d *clusterDeleter) finalizeCluster(ctx context.Context, cluster *platformv
 			finalizerSet.Insert(string(cluster.Spec.Finalizers[i]))
 		}
 	}
-	clusterFinalize.Spec.Finalizers = make([]platformv1.FinalizerName, 0, len(finalizerSet))
+	clusterFinalize.Spec.Finalizers = make([]platformv2.FinalizerName, 0, len(finalizerSet))
 	for _, value := range finalizerSet.List() {
-		clusterFinalize.Spec.Finalizers = append(clusterFinalize.Spec.Finalizers, platformv1.FinalizerName(value))
+		clusterFinalize.Spec.Finalizers = append(clusterFinalize.Spec.Finalizers, platformv2.FinalizerName(value))
 	}
 
-	cluster = &platformv1.Cluster{}
+	cluster = &platformv2.Cluster{}
 	err := d.platformClient.RESTClient().Put().
 		Resource("clusters").
 		Name(clusterFinalize.Name).
@@ -236,7 +237,7 @@ func (d *clusterDeleter) finalizeCluster(ctx context.Context, cluster *platformv
 	return cluster, err
 }
 
-type deleteResourceFunc func(ctx context.Context, deleter *clusterDeleter, cluster *platformv1.Cluster) error
+type deleteResourceFunc func(ctx context.Context, deleter *clusterDeleter, cluster *platformv2.Cluster) error
 
 // todo: delete more addons
 var deleteResourceFuncs = []deleteResourceFunc{
@@ -246,7 +247,7 @@ var deleteResourceFuncs = []deleteResourceFunc{
 }
 
 // deleteAllContent will use the client to delete each resource identified in cluster.
-func (d *clusterDeleter) deleteAllContent(ctx context.Context, cluster *platformv1.Cluster) error {
+func (d *clusterDeleter) deleteAllContent(ctx context.Context, cluster *platformv2.Cluster) error {
 	log.FromContext(ctx).Info("deleteAllContent doing")
 
 	var errs []error
@@ -267,7 +268,7 @@ func (d *clusterDeleter) deleteAllContent(ctx context.Context, cluster *platform
 	return nil
 }
 
-func deletePersistentEvent(ctx context.Context, deleter *clusterDeleter, cluster *platformv1.Cluster) error {
+func deletePersistentEvent(ctx context.Context, deleter *clusterDeleter, cluster *platformv2.Cluster) error {
 	log.FromContext(ctx).Info("deletePersistentEvent doing")
 
 	listOpt := metav1.ListOptions{
@@ -295,7 +296,7 @@ func deletePersistentEvent(ctx context.Context, deleter *clusterDeleter, cluster
 	return nil
 }
 
-func deleteTappControllers(ctx context.Context, deleter *clusterDeleter, cluster *platformv1.Cluster) error {
+func deleteTappControllers(ctx context.Context, deleter *clusterDeleter, cluster *platformv2.Cluster) error {
 	log.FromContext(ctx).Info("deleteTappControllers doing")
 
 	listOpt := metav1.ListOptions{
@@ -323,7 +324,7 @@ func deleteTappControllers(ctx context.Context, deleter *clusterDeleter, cluster
 	return nil
 }
 
-func deleteClusterProvider(ctx context.Context, deleter *clusterDeleter, cluster *platformv1.Cluster) error {
+func deleteClusterProvider(ctx context.Context, deleter *clusterDeleter, cluster *platformv2.Cluster) error {
 	log.FromContext(ctx).Info("deleteClusterProvider doing")
 
 	provider, err := clusterprovider.GetProvider(cluster.Spec.Type)

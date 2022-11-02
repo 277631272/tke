@@ -28,11 +28,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/server/mux"
 	"tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/types"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/platform/util/credential"
 )
 
@@ -134,12 +134,12 @@ func GetCluster(ctx context.Context, platformClient internalversion.PlatformInte
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
 	}
-	clusterv1 := &platformv1.Cluster{}
-	err = platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, clusterv1, nil)
+	clusterv2 := &platformv2.Cluster{}
+	err = platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, clusterv2, nil)
 	if err != nil {
 		return nil, err
 	}
-	restConfig, err := provider.GetRestConfig(ctx, clusterv1, username)
+	restConfig, err := provider.GetRestConfig(ctx, clusterv2, username)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
 	}
@@ -157,15 +157,15 @@ func GetClusterByName(ctx context.Context, platformClient internalversion.Platfo
 	return GetCluster(ctx, platformClient, cluster, username)
 }
 
-func GetV1Cluster(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, cluster *platformv1.Cluster, username string) (*v1.Cluster, error) {
-	result := new(v1.Cluster)
+func GetV1Cluster(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, cluster *platformv2.Cluster, username string) (*v2.Cluster, error) {
+	result := new(v2.Cluster)
 	result.Cluster = cluster
 	result.IsCredentialChanged = false
 	provider, err := GetProvider(cluster.Spec.Type)
 	if err != nil {
 		return nil, err
 	}
-	clusterCredential, err := credential.GetClusterCredentialV1(ctx, platformClient, cluster, username)
+	clusterCredential, err := credential.GetClusterCredentialV2(ctx, platformClient, cluster, username)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return result, err
 	}
@@ -179,7 +179,7 @@ func GetV1Cluster(ctx context.Context, platformClient platformversionedclient.Pl
 	return result, nil
 }
 
-func GetV1ClusterByName(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, clsname, username string) (*v1.Cluster, error) {
+func GetV1ClusterByName(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, clsname, username string) (*v2.Cluster, error) {
 	cluster, err := platformClient.Clusters().Get(ctx, clsname, metav1.GetOptions{})
 	if err != nil {
 		return nil, err

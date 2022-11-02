@@ -21,6 +21,7 @@ package app
 import (
 	"net/http"
 	"time"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
@@ -44,15 +45,15 @@ const (
 )
 
 func startClusterController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "clusters"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v2", Resource: "clusters"}] {
 		return nil, false, nil
 	}
 
 	ctrl := clustercontroller.NewController(
-		ctx.ClientBuilder.ClientOrDie("cluster-controller").PlatformV1(),
-		ctx.InformerFactory.Platform().V1().Clusters(),
+		ctx.ClientBuilder.ClientOrDie("cluster-controller").PlatformV2(),
+		ctx.InformerFactory.Platform().V2().Clusters(),
 		ctx.Config.ClusterController,
-		platformv1.ClusterFinalize,
+		platformv2.ClusterFinalize,
 	)
 
 	go func() {

@@ -36,15 +36,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1informer "tkestack.io/tke/api/client/informers/externalversions/platform/v1"
-	platformv1lister "tkestack.io/tke/api/client/listers/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2informer "tkestack.io/tke/api/client/informers/externalversions/platform/v2"
+	platformv2lister "tkestack.io/tke/api/client/listers/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	controllerutil "tkestack.io/tke/pkg/controller"
 	clusterconfig "tkestack.io/tke/pkg/platform/controller/cluster/config"
 	"tkestack.io/tke/pkg/platform/controller/cluster/deletion"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
+	typesv2 "tkestack.io/tke/pkg/platform/types/v2"
 	vendor "tkestack.io/tke/pkg/platform/util/kubevendor"
 	workqueue_extension "tkestack.io/tke/pkg/platform/util/workqueue"
 	"tkestack.io/tke/pkg/util/log"
@@ -62,11 +62,11 @@ const (
 // Controller is responsible for performing actions dependent upon a cluster phase.
 type Controller struct {
 	queue        workqueue.RateLimitingInterface
-	lister       platformv1lister.ClusterLister
+	lister       platformv2lister.ClusterLister
 	listerSynced cache.InformerSynced
 
 	log                                        log.Logger
-	platformClient                             platformversionedclient.PlatformV1Interface
+	platformClient                             platformversionedclient.PlatformV2Interface
 	deleter                                    deletion.ClusterDeleterInterface
 	healthCheckPeriod                          time.Duration
 	randomeRangeLowerLimitForHealthCheckPeriod time.Duration
@@ -76,10 +76,10 @@ type Controller struct {
 
 // NewController creates a new Controller object.
 func NewController(
-	platformClient platformversionedclient.PlatformV1Interface,
-	clusterInformer platformv1informer.ClusterInformer,
+	platformClient platformversionedclient.PlatformV2Interface,
+	clusterInformer platformv2informer.ClusterInformer,
 	configuration clusterconfig.ClusterControllerConfiguration,
-	finalizerToken platformv1.FinalizerName) *Controller {
+	finalizerToken platformv2.FinalizerName) *Controller {
 	rand.Seed(time.Now().Unix())
 
 	c := &Controller{
@@ -110,7 +110,7 @@ func NewController(
 				UpdateFunc: c.updateCluster,
 			},
 			FilterFunc: func(obj interface{}) bool {
-				cluster, ok := obj.(*platformv1.Cluster)
+				cluster, ok := obj.(*platformv2.Cluster)
 				if !ok {
 					return false
 				}
@@ -166,15 +166,15 @@ func (c *Controller) getPriority(item interface{}) int {
 	}
 
 	switch {
-	case cluster.Status.Phase == platformv1.ClusterPhase("Idling"):
+	case cluster.Status.Phase == platformv2.ClusterPhase("Idling"):
 		return priorityIdling
-	case cluster.Status.Phase == platformv1.ClusterFailed:
+	case cluster.Status.Phase == platformv2.ClusterFailed:
 		return priorityFailed
-	case cluster.Status.Phase == platformv1.ClusterRunning:
+	case cluster.Status.Phase == platformv2.ClusterRunning:
 		return priorityRunning
-	case cluster.Status.Phase == platformv1.ClusterTerminating:
+	case cluster.Status.Phase == platformv2.ClusterTerminating:
 		return priorityTerminating
-	case cluster.Status.Phase == platformv1.ClusterInitializing:
+	case cluster.Status.Phase == platformv2.ClusterInitializing:
 		return priorityInitializing
 	}
 
@@ -182,14 +182,14 @@ func (c *Controller) getPriority(item interface{}) int {
 }
 
 func (c *Controller) addCluster(obj interface{}) {
-	cluster := obj.(*platformv1.Cluster)
+	cluster := obj.(*platformv2.Cluster)
 	c.log.Info("Adding cluster", "clusterName", cluster.Name)
 	c.enqueue(cluster)
 }
 
 func (c *Controller) updateCluster(old, obj interface{}) {
-	oldCluster := old.(*platformv1.Cluster)
-	cluster := obj.(*platformv1.Cluster)
+	oldCluster := old.(*platformv2.Cluster)
+	cluster := obj.(*platformv2.Cluster)
 
 	controllerNeedUpddateResult := c.needsUpdate(oldCluster, cluster)
 	var providerNeedUpddateResult bool
@@ -204,7 +204,7 @@ func (c *Controller) updateCluster(old, obj interface{}) {
 	c.enqueue(cluster)
 }
 
-func (c *Controller) enqueue(obj *platformv1.Cluster) {
+func (c *Controller) enqueue(obj *platformv2.Cluster) {
 	key, err := controllerutil.KeyFunc(obj)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for object %+v: %v", obj, err))
@@ -213,7 +213,7 @@ func (c *Controller) enqueue(obj *platformv1.Cluster) {
 	c.queue.Add(key)
 }
 
-func (c *Controller) needsUpdate(old *platformv1.Cluster, new *platformv1.Cluster) bool {
+func (c *Controller) needsUpdate(old *platformv2.Cluster, new *platformv2.Cluster) bool {
 	healthCondition := new.GetCondition(conditionTypeHealthCheck)
 	if !reflect.DeepEqual(old.Spec, new.Spec) {
 		return true
@@ -229,7 +229,7 @@ func (c *Controller) needsUpdate(old *platformv1.Cluster, new *platformv1.Cluste
 		return true
 
 	}
-	if new.Status.Phase == platformv1.ClusterInitializing {
+	if new.Status.Phase == platformv2.ClusterInitializing {
 		// if ResourceVersion is equal, it's an resync envent, should return true.
 		if old.ResourceVersion == new.ResourceVersion {
 			return true
@@ -237,11 +237,11 @@ func (c *Controller) needsUpdate(old *platformv1.Cluster, new *platformv1.Cluste
 		if len(new.Status.Conditions) == 0 {
 			return true
 		}
-		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv1.ConditionUnknown {
+		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv2.ConditionUnknown {
 			return true
 		}
 		// if user set last condition false block procesee until resync envent
-		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv1.ConditionFalse {
+		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv2.ConditionFalse {
 			return false
 		}
 	}
@@ -343,25 +343,25 @@ func (c *Controller) syncCluster(key string) error {
 	return c.reconcile(valueCtx, key, cluster)
 }
 
-func (c *Controller) reconcile(ctx context.Context, key string, cluster *platformv1.Cluster) error {
+func (c *Controller) reconcile(ctx context.Context, key string, cluster *platformv2.Cluster) error {
 	var err error
 
 	switch cluster.Status.Phase {
 	// empty string is for crd without mutating webhook
 	case "":
-		cluster.Status.Phase = platformv1.ClusterInitializing
+		cluster.Status.Phase = platformv2.ClusterInitializing
 		err = c.onCreate(ctx, cluster)
-	case platformv1.ClusterInitializing:
+	case platformv2.ClusterInitializing:
 		err = c.onCreate(ctx, cluster)
-	case platformv1.ClusterRunning, platformv1.ClusterFailed:
+	case platformv2.ClusterRunning, platformv2.ClusterFailed:
 		err = c.onUpdate(ctx, cluster)
-	case platformv1.ClusterUpgrading:
+	case platformv2.ClusterUpgrading:
 		err = c.onUpdate(ctx, cluster)
-	case platformv1.ClusterUpscaling, platformv1.ClusterDownscaling:
+	case platformv2.ClusterUpscaling, platformv2.ClusterDownscaling:
 		err = c.onUpdate(ctx, cluster)
-	case platformv1.ClusterIdling, platformv1.ClusterConfined:
+	case platformv2.ClusterIdling, platformv2.ClusterConfined:
 		err = c.onUpdate(ctx, cluster)
-	case platformv1.ClusterTerminating:
+	case platformv2.ClusterTerminating:
 		log.FromContext(ctx).Info("Cluster has been terminated. Attempting to cleanup resources")
 		err = c.deleter.Delete(ctx, key)
 		if err == nil {
@@ -374,7 +374,7 @@ func (c *Controller) reconcile(ctx context.Context, key string, cluster *platfor
 	return err
 }
 
-func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) error {
+func (c *Controller) onCreate(ctx context.Context, cluster *platformv2.Cluster) error {
 	var err error
 
 	cluster, err = c.ensureCreateClusterCredential(ctx, cluster)
@@ -390,7 +390,7 @@ func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) 
 		return err
 	}
 
-	for clusterWrapper.Status.Phase == platformv1.ClusterInitializing {
+	for clusterWrapper.Status.Phase == platformv2.ClusterInitializing {
 		err = provider.OnCreate(ctx, clusterWrapper)
 		if err != nil {
 			// Update status, ignore failure
@@ -398,7 +398,7 @@ func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) 
 			updatedCls, _ := c.platformClient.Clusters().Update(ctx, clusterWrapper.Cluster, metav1.UpdateOptions{})
 			// if using crd, cluster status cannot be updated through update cluster
 			if c.isCRDMode {
-				var clsStatus *platformv1.Cluster
+				var clsStatus *platformv2.Cluster
 				if updatedCls == nil {
 					clsStatus = clusterWrapper.Cluster
 				} else {
@@ -433,7 +433,7 @@ func (c *Controller) onCreate(ctx context.Context, cluster *platformv1.Cluster) 
 	return nil
 }
 
-func (c *Controller) onUpdate(ctx context.Context, cluster *platformv1.Cluster) error {
+func (c *Controller) onUpdate(ctx context.Context, cluster *platformv2.Cluster) error {
 	provider, err := clusterprovider.GetProvider(cluster.Spec.Type)
 	if err != nil {
 		return err
@@ -442,10 +442,10 @@ func (c *Controller) onUpdate(ctx context.Context, cluster *platformv1.Cluster) 
 	if err != nil {
 		return err
 	}
-	if clusterWrapper.Status.Phase == platformv1.ClusterRunning ||
-		clusterWrapper.Status.Phase == platformv1.ClusterFailed ||
-		clusterWrapper.Status.Phase == platformv1.ClusterIdling ||
-		clusterWrapper.Status.Phase == platformv1.ClusterConfined {
+	if clusterWrapper.Status.Phase == platformv2.ClusterRunning ||
+		clusterWrapper.Status.Phase == platformv2.ClusterFailed ||
+		clusterWrapper.Status.Phase == platformv2.ClusterIdling ||
+		clusterWrapper.Status.Phase == platformv2.ClusterConfined {
 		err = provider.OnUpdate(ctx, clusterWrapper)
 		clusterWrapper = c.checkHealth(ctx, clusterWrapper)
 		if err != nil {
@@ -469,7 +469,7 @@ func (c *Controller) onUpdate(ctx context.Context, cluster *platformv1.Cluster) 
 			return err
 		}
 	} else {
-		for clusterWrapper.Status.Phase != platformv1.ClusterRunning {
+		for clusterWrapper.Status.Phase != platformv2.ClusterRunning {
 			err = provider.OnUpdate(ctx, clusterWrapper)
 			if err != nil {
 				// Update status, ignore failure
@@ -497,7 +497,7 @@ func (c *Controller) onUpdate(ctx context.Context, cluster *platformv1.Cluster) 
 }
 
 // ensureCreateClusterCredential creates ClusterCredential for cluster if ClusterCredentialRef is nil.
-func (c *Controller) ensureCreateClusterCredential(ctx context.Context, cluster *platformv1.Cluster) (*platformv1.Cluster, error) {
+func (c *Controller) ensureCreateClusterCredential(ctx context.Context, cluster *platformv2.Cluster) (*platformv2.Cluster, error) {
 	if cluster.Spec.ClusterCredentialRef != nil {
 		// Set OwnerReferences for imported cluster credentials
 		cc, err := c.platformClient.ClusterCredentials().Get(ctx, cluster.Spec.ClusterCredentialRef.Name, metav1.GetOptions{})
@@ -505,7 +505,7 @@ func (c *Controller) ensureCreateClusterCredential(ctx context.Context, cluster 
 			return nil, err
 		}
 		cc.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
-			*metav1.NewControllerRef(cluster, platformv1.SchemeGroupVersion.WithKind("Cluster"))}
+			*metav1.NewControllerRef(cluster, platformv2.SchemeGroupVersion.WithKind("Cluster"))}
 		_, err = c.platformClient.ClusterCredentials().Update(ctx, cc, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
@@ -514,10 +514,10 @@ func (c *Controller) ensureCreateClusterCredential(ctx context.Context, cluster 
 	}
 
 	// TODO use informer search by labels.
-	var clustercredentials *platformv1.ClusterCredentialList
+	var clustercredentials *platformv2.ClusterCredentialList
 	var err error
 	if c.isCRDMode {
-		labelSelector := fields.OneTermEqualSelector(platformv1.ClusterNameLable, cluster.Name).String()
+		labelSelector := fields.OneTermEqualSelector(platformv2.ClusterNameLable, cluster.Name).String()
 		clustercredentials, err = c.platformClient.ClusterCredentials().List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 		if err != nil {
 			return nil, err
@@ -531,16 +531,16 @@ func (c *Controller) ensureCreateClusterCredential(ctx context.Context, cluster 
 	}
 
 	// [Idempotent] if not found cluster credentials, create one for next logic
-	var credential *platformv1.ClusterCredential
+	var credential *platformv2.ClusterCredential
 	if len(clustercredentials.Items) == 0 {
-		credential = &platformv1.ClusterCredential{
+		credential = &platformv2.ClusterCredential{
 			TenantID:    cluster.Spec.TenantID,
 			ClusterName: cluster.Name,
 			ObjectMeta: metav1.ObjectMeta{
-				Labels:       map[string]string{platformv1.ClusterNameLable: cluster.Name},
+				Labels:       map[string]string{platformv2.ClusterNameLable: cluster.Name},
 				GenerateName: "cc-",
 				OwnerReferences: []metav1.OwnerReference{
-					*metav1.NewControllerRef(cluster, platformv1.SchemeGroupVersion.WithKind("Cluster"))},
+					*metav1.NewControllerRef(cluster, platformv2.SchemeGroupVersion.WithKind("Cluster"))},
 			},
 		}
 
@@ -561,9 +561,9 @@ func (c *Controller) ensureCreateClusterCredential(ctx context.Context, cluster 
 	return cluster, nil
 }
 
-func (c *Controller) checkHealth(ctx context.Context, cluster *typesv1.Cluster) *typesv1.Cluster {
-	if !(cluster.Status.Phase == platformv1.ClusterRunning ||
-		cluster.Status.Phase == platformv1.ClusterFailed) {
+func (c *Controller) checkHealth(ctx context.Context, cluster *typesv2.Cluster) *typesv2.Cluster {
+	if !(cluster.Status.Phase == platformv2.ClusterRunning ||
+		cluster.Status.Phase == platformv2.ClusterFailed) {
 		return cluster
 	}
 
@@ -573,31 +573,31 @@ func (c *Controller) checkHealth(ctx context.Context, cluster *typesv1.Cluster) 
 
 	log.Infof("next heart beat time. now:%s pesudo:%s cls:%s", time.Now(), pseudo, cluster.Name)
 
-	healthCheckCondition := platformv1.ClusterCondition{
+	healthCheckCondition := platformv2.ClusterCondition{
 		Type:          conditionTypeHealthCheck,
-		Status:        platformv1.ConditionFalse,
+		Status:        platformv2.ConditionFalse,
 		LastProbeTime: metav1.NewTime(pseudo),
 	}
 
 	client, err := cluster.Clientset()
 	if err != nil {
-		cluster.Status.Phase = platformv1.ClusterFailed
+		cluster.Status.Phase = platformv2.ClusterFailed
 
 		healthCheckCondition.Reason = failedHealthCheckReason
 		healthCheckCondition.Message = err.Error()
 	} else {
 		version, err := client.Discovery().ServerVersion()
 		if err != nil {
-			cluster.Status.Phase = platformv1.ClusterFailed
+			cluster.Status.Phase = platformv2.ClusterFailed
 
 			healthCheckCondition.Reason = failedHealthCheckReason
 			healthCheckCondition.Message = err.Error()
 		} else {
-			cluster.Status.Phase = platformv1.ClusterRunning
+			cluster.Status.Phase = platformv2.ClusterRunning
 			cluster.Status.Version = strings.TrimPrefix(version.String(), "v")
 			cluster.Status.KubeVendor = vendor.GetKubeVendor(cluster.Status.Version)
 
-			healthCheckCondition.Status = platformv1.ConditionTrue
+			healthCheckCondition.Status = platformv2.ConditionTrue
 		}
 	}
 

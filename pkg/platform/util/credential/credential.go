@@ -20,13 +20,13 @@ package credential
 
 import (
 	"context"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	platforminternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
 )
 
 // GetClusterCredential returns the cluster's credential
@@ -48,10 +48,10 @@ func GetClusterCredential(ctx context.Context, client platforminternalclient.Pla
 	return credential, nil
 }
 
-// GetClusterCredentialV1 returns the versioned cluster's credential
-func GetClusterCredentialV1(ctx context.Context, client platformversionedclient.PlatformV1Interface, cluster *platformv1.Cluster, username string) (*platformv1.ClusterCredential, error) {
+// GetClusterCredentialV2 returns the versioned cluster's credential
+func GetClusterCredentialV2(ctx context.Context, client platformversionedclient.PlatformV2Interface, cluster *platformv2.Cluster, username string) (*platformv2.ClusterCredential, error) {
 	var (
-		credential *platformv1.ClusterCredential
+		credential *platformv2.ClusterCredential
 		err        error
 	)
 
