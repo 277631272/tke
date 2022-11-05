@@ -24,7 +24,7 @@ import (
 	genericserver "k8s.io/apiserver/pkg/server"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	restclient "k8s.io/client-go/rest"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/logagent"
 	v1 "tkestack.io/tke/api/logagent/v1"
 	"tkestack.io/tke/pkg/apiserver/storage"
@@ -37,7 +37,7 @@ import (
 type StorageProvider struct {
 	LoopbackClientConfig *restclient.Config
 	PrivilegedUsername   string
-	PlatformClient       platformversionedclient.PlatformV1Interface //used by structs like logfile tree to get cluster client and then communicate with clusters
+	PlatformClient       platformversionedclient.PlatformV2Interface //used by structs like logfile tree to get cluster client and then communicate with clusters
 }
 
 // Implement RESTStorageProvider

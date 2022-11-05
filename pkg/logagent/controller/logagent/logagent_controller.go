@@ -41,7 +41,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	logagentv1informer "tkestack.io/tke/api/client/informers/externalversions/logagent/v1"
 	logagentv1lister "tkestack.io/tke/api/client/listers/logagent/v1"
 	v1 "tkestack.io/tke/api/logagent/v1"
@@ -73,7 +73,7 @@ const (
 
 // Controller is responsible for performing actions dependent upon a LogCollector phase.
 type Controller struct {
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	client         clientset.Interface
 	cache          *logcollectorCache
 	health         sync.Map
@@ -86,7 +86,7 @@ type Controller struct {
 }
 
 // NewController creates a new LogCollector Controller object.
-func NewController(platformClient platformversionedclient.PlatformV1Interface, client clientset.Interface,
+func NewController(platformClient platformversionedclient.PlatformV2Interface, client clientset.Interface,
 	informer logagentv1informer.LogAgentInformer,
 	resyncPeriod time.Duration) *Controller {
 	// create the controller so we can inject the enqueue function

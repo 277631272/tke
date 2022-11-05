@@ -34,8 +34,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"tkestack.io/tke/api/platform"
 
-	platformv1 "tkestack.io/tke/api/platform/v1"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
+	typesv2 "tkestack.io/tke/pkg/platform/types/v2"
 )
 
 const (
@@ -59,17 +59,17 @@ type APIProvider interface {
 // ControllerProvider ControllerProvider
 type ControllerProvider interface {
 	// NeedUpdate could be implemented by user to judge whether machine need update or not.
-	NeedUpdate(old, new *platformv1.Machine) bool
+	NeedUpdate(old, new *platformv2.Machine) bool
 
 	PreCreate(machine *platform.Machine) error
 	AfterCreate(machine *platform.Machine) error
 
-	OnCreate(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error
-	OnUpdate(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error
-	OnDelete(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error
+	OnCreate(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error
+	OnUpdate(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error
+	OnDelete(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error
 	// OnHealthCheck could be implemented by user, and default implementation is checking
 	// tenant cluster node status by machine IP
-	OnHealthCheck(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) *platformv1.Machine
+	OnHealthCheck(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) *platformv2.Machine
 }
 
 // Provider defines a set of response interfaces for specific machine
@@ -83,7 +83,7 @@ type Provider interface {
 
 var _ Provider = &DelegateProvider{}
 
-type Handler func(context.Context, *platformv1.Machine, *typesv1.Cluster) error
+type Handler func(context.Context, *platformv2.Machine, *typesv2.Cluster) error
 
 func (h Handler) Name() string {
 	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
@@ -146,7 +146,7 @@ func (p *DelegateProvider) AfterCreate(machine *platform.Machine) error {
 	return nil
 }
 
-func (p *DelegateProvider) OnCreate(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *DelegateProvider) OnCreate(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	condition, err := p.getCreateCurrentCondition(machine)
 	if err != nil {
 		return err
@@ -154,9 +154,9 @@ func (p *DelegateProvider) OnCreate(ctx context.Context, machine *platformv1.Mac
 
 	if cluster.Spec.Features.SkipConditions != nil &&
 		funk.ContainsString(cluster.Spec.Features.SkipConditions, condition.Type) {
-		machine.SetCondition(platformv1.MachineCondition{
+		machine.SetCondition(platformv2.MachineCondition{
 			Type:    condition.Type,
-			Status:  platformv1.ConditionTrue,
+			Status:  platformv2.ConditionTrue,
 			Reason:  ReasonSkip,
 			Message: "Skip current condition",
 		})
@@ -171,28 +171,28 @@ func (p *DelegateProvider) OnCreate(ctx context.Context, machine *platformv1.Mac
 		err = handler(ctx, machine, cluster)
 		log.FromContext(ctx).Info("Done", "error", err, "cost", time.Since(startTime).String())
 		if err != nil {
-			machine.SetCondition(platformv1.MachineCondition{
+			machine.SetCondition(platformv2.MachineCondition{
 				Type:    condition.Type,
-				Status:  platformv1.ConditionFalse,
+				Status:  platformv2.ConditionFalse,
 				Message: err.Error(),
 				Reason:  ReasonFailedInit,
 			})
 			return err
 		}
 
-		machine.SetCondition(platformv1.MachineCondition{
+		machine.SetCondition(platformv2.MachineCondition{
 			Type:   condition.Type,
-			Status: platformv1.ConditionTrue,
+			Status: platformv2.ConditionTrue,
 		})
 	}
 
 	nextConditionType := p.getNextConditionType(condition.Type)
 	if nextConditionType == ConditionTypeDone {
-		machine.Status.Phase = platformv1.MachineRunning
+		machine.Status.Phase = platformv2.MachineRunning
 	} else {
-		machine.SetCondition(platformv1.MachineCondition{
+		machine.SetCondition(platformv2.MachineCondition{
 			Type:    nextConditionType,
-			Status:  platformv1.ConditionUnknown,
+			Status:  platformv2.ConditionUnknown,
 			Message: "waiting execute",
 			Reason:  ReasonWaiting,
 		})
@@ -201,8 +201,8 @@ func (p *DelegateProvider) OnCreate(ctx context.Context, machine *platformv1.Mac
 	return nil
 }
 
-func (p *DelegateProvider) OnUpdate(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
-	if machine.Status.Phase != platformv1.MachineUpgrading {
+func (p *DelegateProvider) OnUpdate(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
+	if machine.Status.Phase != platformv2.MachineUpgrading {
 		return nil
 	}
 	for _, handler := range p.UpdateHandlers {
@@ -223,7 +223,7 @@ func (p *DelegateProvider) OnUpdate(ctx context.Context, machine *platformv1.Mac
 	return nil
 }
 
-func (p *DelegateProvider) OnDelete(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *DelegateProvider) OnDelete(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	for _, handler := range p.DeleteHandlers {
 		ctx := log.FromContext(ctx).WithName("MachineProvider.OnDelete").WithName(handler.Name()).WithContext(ctx)
 		log.FromContext(ctx).Info("Doing")
@@ -242,34 +242,34 @@ func (p *DelegateProvider) OnDelete(ctx context.Context, machine *platformv1.Mac
 	return nil
 }
 
-func (p *DelegateProvider) OnHealthCheck(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) *platformv1.Machine {
-	if !(machine.Status.Phase == platformv1.MachineRunning ||
-		machine.Status.Phase == platformv1.MachineFailed) {
+func (p *DelegateProvider) OnHealthCheck(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) *platformv2.Machine {
+	if !(machine.Status.Phase == platformv2.MachineRunning ||
+		machine.Status.Phase == platformv2.MachineFailed) {
 		return machine
 	}
 
-	healthCheckCondition := platformv1.MachineCondition{
+	healthCheckCondition := platformv2.MachineCondition{
 		Type:   ConditionTypeHealthCheck,
-		Status: platformv1.ConditionFalse,
+		Status: platformv2.ConditionFalse,
 	}
 
 	clientset, err := cluster.Clientset()
 	if err != nil {
-		machine.Status.Phase = platformv1.MachineFailed
+		machine.Status.Phase = platformv2.MachineFailed
 
 		healthCheckCondition.Reason = FailedHealthCheckReason
 		healthCheckCondition.Message = err.Error()
 	} else {
 		_, err = apiclient.GetNodeByMachineIP(ctx, clientset, machine.Spec.IP)
 		if err != nil {
-			machine.Status.Phase = platformv1.MachineFailed
+			machine.Status.Phase = platformv2.MachineFailed
 
 			healthCheckCondition.Reason = FailedHealthCheckReason
 			healthCheckCondition.Message = err.Error()
 		} else {
-			machine.Status.Phase = platformv1.MachineRunning
+			machine.Status.Phase = platformv2.MachineRunning
 
-			healthCheckCondition.Status = platformv1.ConditionTrue
+			healthCheckCondition.Status = platformv2.ConditionTrue
 		}
 	}
 
@@ -280,7 +280,7 @@ func (p *DelegateProvider) OnHealthCheck(ctx context.Context, machine *platformv
 	return machine
 }
 
-func (p *DelegateProvider) NeedUpdate(old, new *platformv1.Machine) bool {
+func (p *DelegateProvider) NeedUpdate(old, new *platformv2.Machine) bool {
 	return false
 }
 
@@ -313,8 +313,8 @@ func (p *DelegateProvider) getCreateHandler(conditionType string) Handler {
 	return nil
 }
 
-func (p *DelegateProvider) getCreateCurrentCondition(c *platformv1.Machine) (*platformv1.MachineCondition, error) {
-	if c.Status.Phase == platformv1.MachineRunning {
+func (p *DelegateProvider) getCreateCurrentCondition(c *platformv2.Machine) (*platformv2.MachineCondition, error) {
+	if c.Status.Phase == platformv2.MachineRunning {
 		return nil, errors.New("machine phase is running now")
 	}
 	if len(p.CreateHandlers) == 0 {
@@ -322,16 +322,16 @@ func (p *DelegateProvider) getCreateCurrentCondition(c *platformv1.Machine) (*pl
 	}
 
 	if len(c.Status.Conditions) == 0 {
-		return &platformv1.MachineCondition{
+		return &platformv2.MachineCondition{
 			Type:    p.CreateHandlers[0].Name(),
-			Status:  platformv1.ConditionUnknown,
+			Status:  platformv2.ConditionUnknown,
 			Message: "waiting process",
 			Reason:  ReasonWaiting,
 		}, nil
 	}
 
 	for _, condition := range c.Status.Conditions {
-		if condition.Status == platformv1.ConditionFalse || condition.Status == platformv1.ConditionUnknown {
+		if condition.Status == platformv2.ConditionFalse || condition.Status == platformv2.ConditionUnknown {
 			return &condition, nil
 		}
 	}

@@ -98,6 +98,14 @@ func (c *Cluster) PlatformClientsetForBootstrap() (platformversionedclient.Platf
 	return platformversionedclient.NewForConfig(config)
 }
 
+func (c *Cluster) PlatformV1ClientsetForBootstrap() (platformversionedclient.PlatformV2Interface, error) {
+	config, err := c.RESTConfigForBootstrap()
+	if err != nil {
+		return nil, err
+	}
+	return platformversionedclient.NewForConfig(config)
+}
+
 func (c *Cluster) RegistryClientsetForBootstrap() (registryversionedclient.RegistryV1Interface, error) {
 	config, err := c.RESTConfigForBootstrap()
 	if err != nil {

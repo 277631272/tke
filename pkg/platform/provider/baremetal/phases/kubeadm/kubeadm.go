@@ -25,6 +25,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
@@ -37,13 +38,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	kubeadmv1beta2 "tkestack.io/tke/pkg/platform/provider/baremetal/apis/kubeadm/v1beta2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/kubelet"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/res"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	platformapiclient "tkestack.io/tke/pkg/platform/util/apiclient"
 	"tkestack.io/tke/pkg/util/apiclient"
 	"tkestack.io/tke/pkg/util/log"
@@ -52,7 +52,7 @@ import (
 )
 
 type Option struct {
-	RuntimeType platformv1.ContainerRuntimeType
+	RuntimeType platformv2.ContainerRuntimeType
 	Version     string
 }
 
@@ -182,7 +182,7 @@ func Reset(s ssh.Interface, phase string) error {
 	return nil
 }
 
-func RenewCerts(c *v1.Cluster, s ssh.Interface) error {
+func RenewCerts(c *v2.Cluster, s ssh.Interface) error {
 	err := fixKubeadmBug1753(s)
 	if err != nil {
 		return fmt.Errorf("fixKubeadmBug1753(https://github.com/kubernetes/kubeadm/issues/1753) error: %w", err)
@@ -253,7 +253,7 @@ func fixKubeadmBug88811(client kubernetes.Interface) error {
 	return nil
 }
 
-func RestartControlPlane(c *v1.Cluster, s ssh.Interface) error {
+func RestartControlPlane(c *v2.Cluster, s ssh.Interface) error {
 	targets := []string{"kube-apiserver", "kube-controller-manager", "kube-scheduler"}
 	for _, one := range targets {
 		err := RestartContainerByLabel(c, s, ContainerLabelOfControlPlane(c, one))
@@ -265,16 +265,16 @@ func RestartControlPlane(c *v1.Cluster, s ssh.Interface) error {
 	return nil
 }
 
-func ContainerLabelOfControlPlane(c *v1.Cluster, name string) string {
-	if c.Cluster.Spec.Features.ContainerRuntime == platformv1.Docker {
+func ContainerLabelOfControlPlane(c *v2.Cluster, name string) string {
+	if c.Cluster.Spec.Features.ContainerRuntime == platformv2.Docker {
 		return fmt.Sprintf("label=io.kubernetes.container.name=%s", name)
 	}
 	return fmt.Sprintf("io.kubernetes.container.name=%s", name)
 }
 
-func RestartContainerByLabel(c *v1.Cluster, s ssh.Interface, label string) error {
+func RestartContainerByLabel(c *v2.Cluster, s ssh.Interface, label string) error {
 	cmd := ""
-	if c.Cluster.Spec.Features.ContainerRuntime == platformv1.Docker {
+	if c.Cluster.Spec.Features.ContainerRuntime == platformv2.Docker {
 		cmd = fmt.Sprintf("docker rm -f $(docker ps -q -f '%s')", label)
 	} else {
 		cmd = fmt.Sprintf("crictl rm -f $(crictl ps -q --label '%s')", label)
@@ -286,7 +286,7 @@ func RestartContainerByLabel(c *v1.Cluster, s ssh.Interface, label string) error
 
 	err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 		cmd := ""
-		if c.Cluster.Spec.Features.ContainerRuntime == platformv1.Docker {
+		if c.Cluster.Spec.Features.ContainerRuntime == platformv2.Docker {
 			cmd = fmt.Sprintf("docker ps -q -f '%s'", label)
 		} else {
 			cmd = fmt.Sprintf("crictl ps -q --label '%s'", label)
@@ -326,7 +326,7 @@ type UpgradeOption struct {
 
 // UpgradeNode upgrades node by kubeadm.
 // Refer: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
-func UpgradeNode(s ssh.Interface, client kubernetes.Interface, platformClient platformv1client.PlatformV1Interface, logger log.Logger, cluster *v1.Cluster, option UpgradeOption) (upgraded bool, err error) {
+func UpgradeNode(s ssh.Interface, client kubernetes.Interface, platformClient platformv2client.PlatformV2Interface, logger log.Logger, cluster *v2.Cluster, option UpgradeOption) (upgraded bool, err error) {
 	if option.NodeRole == NodeRoleWorker {
 		ok, err := checkMasterNodesVersion(client, option.Version)
 		if err != nil {
@@ -631,10 +631,10 @@ func uncordonNode(s ssh.Interface, nodeName string) error {
 }
 
 // markNextUpgradeWorkerNode marks next wokrer node to be upgraded.
-func MarkNextUpgradeWorkerNode(client kubernetes.Interface, platformClient platformv1client.PlatformV1Interface, version, clusterName string) error {
+func MarkNextUpgradeWorkerNode(client kubernetes.Interface, platformClient platformv2client.PlatformV2Interface, version, clusterName string) error {
 	machines, err := platformClient.Machines().List(context.TODO(), metav1.ListOptions{
 		LabelSelector: fields.OneTermEqualSelector(constants.LabelNodeNeedUpgrade, WillUpgrade).String(),
-		FieldSelector: fields.OneTermEqualSelector(platformv1.MachineClusterField, clusterName).String(),
+		FieldSelector: fields.OneTermEqualSelector(platformv2.MachineClusterField, clusterName).String(),
 	})
 	if err != nil {
 		return err
@@ -654,8 +654,8 @@ func MarkNextUpgradeWorkerNode(client kubernetes.Interface, platformClient platf
 		}
 	}
 	if nextMachineName != "" {
-		err = platformapiclient.PatchMachine(context.TODO(), platformClient, nextMachineName, func(machine *platformv1.Machine) {
-			machine.Status.Phase = platformv1.MachineUpgrading
+		err = platformapiclient.PatchMachine(context.TODO(), platformClient, nextMachineName, func(machine *platformv2.Machine) {
+			machine.Status.Phase = platformv2.MachineUpgrading
 		})
 		if err != nil {
 			return err
@@ -665,24 +665,24 @@ func MarkNextUpgradeWorkerNode(client kubernetes.Interface, platformClient platf
 	return nil
 }
 
-func RemoveUpgradeLabel(platformClient platformv1client.PlatformV1Interface, machine *platformv1.Machine) error {
-	err := platformapiclient.PatchMachine(context.TODO(), platformClient, machine.Name, func(machine *platformv1.Machine) {
+func RemoveUpgradeLabel(platformClient platformv2client.PlatformV2Interface, machine *platformv2.Machine) error {
+	err := platformapiclient.PatchMachine(context.TODO(), platformClient, machine.Name, func(machine *platformv2.Machine) {
 		// Remove upgrade label
 		delete(machine.Labels, constants.LabelNodeNeedUpgrade)
-		machine.Status.Phase = platformv1.MachineRunning
+		machine.Status.Phase = platformv2.MachineRunning
 	})
 	return err
 }
 
-func AddNeedUpgradeLabel(platformClient platformv1client.PlatformV1Interface, clusterName, labelValue string) error {
+func AddNeedUpgradeLabel(platformClient platformv2client.PlatformV2Interface, clusterName, labelValue string) error {
 	machines, err := platformClient.Machines().List(context.TODO(), metav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(platformv1.MachineClusterField, clusterName).String(),
+		FieldSelector: fields.OneTermEqualSelector(platformv2.MachineClusterField, clusterName).String(),
 	})
 	if err != nil {
 		return err
 	}
 	for _, machine := range machines.Items {
-		err = platformapiclient.PatchMachine(context.TODO(), platformClient, machine.Name, func(machine *platformv1.Machine) {
+		err = platformapiclient.PatchMachine(context.TODO(), platformClient, machine.Name, func(machine *platformv2.Machine) {
 			if machine.Labels == nil {
 				machine.Labels = make(map[string]string)
 			}

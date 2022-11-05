@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	esclient "tkestack.io/tke/pkg/monitor/storage/es/client"
 	"tkestack.io/tke/pkg/platform/util"
 	"tkestack.io/tke/pkg/platform/util/addon"
@@ -50,7 +50,7 @@ var ClusterNameToClient sync.Map
 var ClusterNameToMonitor sync.Map
 
 // GetClusterClient get kubernetes client via cluster name
-func GetClusterClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV1Interface) (kubernetes.Interface, error) {
+func GetClusterClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV2Interface) (kubernetes.Interface, error) {
 	// First check from cache
 	if item, ok := ClusterNameToClient.Load(clusterName); ok {
 		// Check if is available
@@ -73,7 +73,7 @@ func GetClusterClient(ctx context.Context, clusterName string, platformClient pl
 }
 
 // GetMonitoringClient get monitoring client via cluster name
-func GetMonitoringClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV1Interface) (monitoringclient.Interface, error) {
+func GetMonitoringClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV2Interface) (monitoringclient.Interface, error) {
 	// First check from cache
 	if item, ok := ClusterNameToMonitor.Load(clusterName); ok {
 		// Check if is available

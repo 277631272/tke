@@ -31,8 +31,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	v1platform "tkestack.io/tke/api/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	v2platform "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/util/addon"
 	"tkestack.io/tke/pkg/util/log"
 )
@@ -42,7 +42,7 @@ import (
 var ClusterNameToClient sync.Map
 
 // GetClusterClient get kubernetes client via cluster name
-func GetClusterClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV1Interface) (kubernetes.Interface, error) {
+func GetClusterClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV2Interface) (kubernetes.Interface, error) {
 	// First check from cache
 	if item, ok := ClusterNameToClient.Load(clusterName); ok {
 		// Check if is available
@@ -64,8 +64,8 @@ func GetClusterClient(ctx context.Context, clusterName string, platformClient pl
 	return kubeClient, nil
 }
 
-//TODO: use api && controller instead of proxy
-func APIServerLocationByCluster(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV1Interface) (*url.URL, http.RoundTripper, string, error) {
+// TODO: use api && controller instead of proxy
+func APIServerLocationByCluster(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV2Interface) (*url.URL, http.RoundTripper, string, error) {
 	requestInfo, ok := request.RequestInfoFrom(ctx)
 	if !ok {
 		return nil, nil, "", errors.NewBadRequest("unable to get request info from context")
@@ -75,7 +75,7 @@ func APIServerLocationByCluster(ctx context.Context, clusterName string, platfor
 		log.Errorf("unable to get cluster %v", err)
 		return nil, nil, "", err
 	}
-	if cluster.Status.Phase != v1platform.ClusterRunning {
+	if cluster.Status.Phase != v2platform.ClusterRunning {
 		return nil, nil, "", errors.NewServiceUnavailable(fmt.Sprintf("cluster %s status is abnormal", cluster.ObjectMeta.Name))
 	}
 	credential, err := addon.GetClusterCredentialV1(ctx, platformClient, cluster)
@@ -102,8 +102,8 @@ func APIServerLocationByCluster(ctx context.Context, clusterName string, platfor
 	return apiserver, transport, token, nil
 }
 
-//use cache to optimize this function
-func GetClusterPodIP(ctx context.Context, clusterName, namespace, podName string, platformClient platformversionedclient.PlatformV1Interface) (string, error) {
+// use cache to optimize this function
+func GetClusterPodIP(ctx context.Context, clusterName, namespace, podName string, platformClient platformversionedclient.PlatformV2Interface) (string, error) {
 	client, err := GetClusterClient(ctx, clusterName, platformClient)
 	if err != nil {
 		log.Errorf("unable to get cluster client %v", err)

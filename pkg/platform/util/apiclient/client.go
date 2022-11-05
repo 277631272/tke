@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 )
 
 const (
@@ -43,7 +43,7 @@ const (
 
 // PatchMachine tries to patch a machine using patchFn for the actual mutating logic.
 // Retries are provided by the wait package.
-func PatchMachine(ctx context.Context, client platformv1client.PlatformV1Interface, machineName string, patchFn func(*platformv1.Machine)) error {
+func PatchMachine(ctx context.Context, client platformv2client.PlatformV2Interface, machineName string, patchFn func(*platformv2.Machine)) error {
 	// wait.Poll will rerun the condition function every interval function if
 	// the function returns false. If the condition function returns an error
 	// then the retries end and the error is returned.
@@ -54,7 +54,7 @@ func PatchMachine(ctx context.Context, client platformv1client.PlatformV1Interfa
 // This is a condition function meant to be used with wait.Poll. false, nil
 // implies it is safe to try again, an error indicates no more tries should be
 // made and true indicates success.
-func PatchMachineOnce(ctx context.Context, client platformv1client.PlatformV1Interface, machineName string, patchFn func(*platformv1.Machine)) func() (bool, error) {
+func PatchMachineOnce(ctx context.Context, client platformv2client.PlatformV2Interface, machineName string, patchFn func(*platformv2.Machine)) func() (bool, error) {
 	return func() (bool, error) {
 		// First get the machine object
 		machine, err := client.Machines().Get(ctx, machineName, metav1.GetOptions{})

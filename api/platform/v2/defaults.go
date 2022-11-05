@@ -52,45 +52,47 @@ func SetDefaults_ClusterStatus(obj *ClusterStatus) {
 	}
 }
 
-func SetDefaults_MachineStatus(obj *MachineStatus) {
-	if obj.Phase == "" {
-		obj.Phase = MachineInitializing
+/*
+	func SetDefaults_MachineStatus(obj *MachineStatus) {
+		if obj.Phase == "" {
+			obj.Phase = MachineInitializing
+		}
 	}
-}
 
-func SetDefaults_ConfigMap(obj *ConfigMap) {
-	if obj.Data == nil {
-		obj.Data = make(map[string]string)
+	func SetDefaults_ConfigMap(obj *ConfigMap) {
+		if obj.Data == nil {
+			obj.Data = make(map[string]string)
+		}
 	}
-}
 
 // Addon
 
 // SetDefaults_NamespaceSetStatus sets additional defaults namespace status.
-func SetDefaults_PersistentEventStatus(obj *PersistentEventStatus) {
-	if obj.Phase == "" {
-		obj.Phase = AddonPhaseInitializing
-	}
-}
 
-func SetDefaults_TappControllerStatus(obj *TappControllerStatus) {
-	if obj.Phase == "" {
-		obj.Phase = AddonPhaseInitializing
+	func SetDefaults_PersistentEventStatus(obj *PersistentEventStatus) {
+		if obj.Phase == "" {
+			obj.Phase = AddonPhaseInitializing
+		}
 	}
-}
 
-func SetDefaults_CSIOperatorStatus(obj *CSIOperatorStatus) {
-	if obj.Phase == "" {
-		obj.Phase = AddonPhaseInitializing
+	func SetDefaults_TappControllerStatus(obj *TappControllerStatus) {
+		if obj.Phase == "" {
+			obj.Phase = AddonPhaseInitializing
+		}
 	}
-}
 
-func SetDefaults_CronHPAStatus(obj *CronHPAStatus) {
-	if obj.Phase == "" {
-		obj.Phase = AddonPhaseInitializing
+	func SetDefaults_CSIOperatorStatus(obj *CSIOperatorStatus) {
+		if obj.Phase == "" {
+			obj.Phase = AddonPhaseInitializing
+		}
 	}
-}
 
+	func SetDefaults_CronHPAStatus(obj *CronHPAStatus) {
+		if obj.Phase == "" {
+			obj.Phase = AddonPhaseInitializing
+		}
+	}
+*/
 func SetDefaults_ClusterFeature(obj *ClusterFeature) {
 	if obj.ContainerRuntime == "" {
 		obj.ContainerRuntime = Docker

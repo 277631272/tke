@@ -31,32 +31,9 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&CSIOperator{}, func(obj interface{}) { SetObjectDefaults_CSIOperator(obj.(*CSIOperator)) })
-	scheme.AddTypeDefaultingFunc(&CSIOperatorList{}, func(obj interface{}) { SetObjectDefaults_CSIOperatorList(obj.(*CSIOperatorList)) })
 	scheme.AddTypeDefaultingFunc(&Cluster{}, func(obj interface{}) { SetObjectDefaults_Cluster(obj.(*Cluster)) })
 	scheme.AddTypeDefaultingFunc(&ClusterList{}, func(obj interface{}) { SetObjectDefaults_ClusterList(obj.(*ClusterList)) })
-	scheme.AddTypeDefaultingFunc(&ConfigMap{}, func(obj interface{}) { SetObjectDefaults_ConfigMap(obj.(*ConfigMap)) })
-	scheme.AddTypeDefaultingFunc(&ConfigMapList{}, func(obj interface{}) { SetObjectDefaults_ConfigMapList(obj.(*ConfigMapList)) })
-	scheme.AddTypeDefaultingFunc(&CronHPA{}, func(obj interface{}) { SetObjectDefaults_CronHPA(obj.(*CronHPA)) })
-	scheme.AddTypeDefaultingFunc(&CronHPAList{}, func(obj interface{}) { SetObjectDefaults_CronHPAList(obj.(*CronHPAList)) })
-	scheme.AddTypeDefaultingFunc(&Machine{}, func(obj interface{}) { SetObjectDefaults_Machine(obj.(*Machine)) })
-	scheme.AddTypeDefaultingFunc(&MachineList{}, func(obj interface{}) { SetObjectDefaults_MachineList(obj.(*MachineList)) })
-	scheme.AddTypeDefaultingFunc(&PersistentEvent{}, func(obj interface{}) { SetObjectDefaults_PersistentEvent(obj.(*PersistentEvent)) })
-	scheme.AddTypeDefaultingFunc(&PersistentEventList{}, func(obj interface{}) { SetObjectDefaults_PersistentEventList(obj.(*PersistentEventList)) })
-	scheme.AddTypeDefaultingFunc(&TappController{}, func(obj interface{}) { SetObjectDefaults_TappController(obj.(*TappController)) })
-	scheme.AddTypeDefaultingFunc(&TappControllerList{}, func(obj interface{}) { SetObjectDefaults_TappControllerList(obj.(*TappControllerList)) })
 	return nil
-}
-
-func SetObjectDefaults_CSIOperator(in *CSIOperator) {
-	SetDefaults_CSIOperatorStatus(&in.Status)
-}
-
-func SetObjectDefaults_CSIOperatorList(in *CSIOperatorList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_CSIOperator(a)
-	}
 }
 
 func SetObjectDefaults_Cluster(in *Cluster) {
@@ -73,60 +50,5 @@ func SetObjectDefaults_ClusterList(in *ClusterList) {
 	for i := range in.Items {
 		a := &in.Items[i]
 		SetObjectDefaults_Cluster(a)
-	}
-}
-
-func SetObjectDefaults_ConfigMap(in *ConfigMap) {
-	SetDefaults_ConfigMap(in)
-}
-
-func SetObjectDefaults_ConfigMapList(in *ConfigMapList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_ConfigMap(a)
-	}
-}
-
-func SetObjectDefaults_CronHPA(in *CronHPA) {
-	SetDefaults_CronHPAStatus(&in.Status)
-}
-
-func SetObjectDefaults_CronHPAList(in *CronHPAList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_CronHPA(a)
-	}
-}
-
-func SetObjectDefaults_Machine(in *Machine) {
-	SetDefaults_MachineStatus(&in.Status)
-}
-
-func SetObjectDefaults_MachineList(in *MachineList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_Machine(a)
-	}
-}
-
-func SetObjectDefaults_PersistentEvent(in *PersistentEvent) {
-	SetDefaults_PersistentEventStatus(&in.Status)
-}
-
-func SetObjectDefaults_PersistentEventList(in *PersistentEventList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_PersistentEvent(a)
-	}
-}
-
-func SetObjectDefaults_TappController(in *TappController) {
-	SetDefaults_TappControllerStatus(&in.Status)
-}
-
-func SetObjectDefaults_TappControllerList(in *TappControllerList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_TappController(a)
 	}
 }

@@ -23,24 +23,24 @@ import (
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 )
 
-func newClusterForTest(resourcesVersion string, spec *platformv1.ClusterSpec, phase platformv1.ClusterPhase, conditions []platformv1.ClusterCondition) *platformv1.Cluster {
-	mc := &platformv1.Cluster{
+func newClusterForTest(resourcesVersion string, spec *platformv2.ClusterSpec, phase platformv2.ClusterPhase, conditions []platformv2.ClusterCondition) *platformv2.Cluster {
+	mc := &platformv2.Cluster{
 		ObjectMeta: v1.ObjectMeta{ResourceVersion: resourcesVersion},
-		Spec: platformv1.ClusterSpec{
+		Spec: platformv2.ClusterSpec{
 			TenantID:    "default",
 			DisplayName: "global",
 			Type:        "Baremetal",
 			Version:     "1.21.1-tke.1",
 		},
-		Status: platformv1.ClusterStatus{
-			Phase: platformv1.ClusterRunning,
-			Conditions: []platformv1.ClusterCondition{
+		Status: platformv2.ClusterStatus{
+			Phase: platformv2.ClusterRunning,
+			Conditions: []platformv2.ClusterCondition{
 				{
 					Type:          conditionTypeHealthCheck,
-					Status:        platformv1.ConditionTrue,
+					Status:        platformv2.ConditionTrue,
 					LastProbeTime: v1.Now(),
 				},
 			},
@@ -70,8 +70,8 @@ func TestController_needsUpdate(t *testing.T) {
 	// 	healthCheckPeriod time.Duration
 	// }
 	type args struct {
-		old *platformv1.Cluster
-		new *platformv1.Cluster
+		old *platformv2.Cluster
+		new *platformv2.Cluster
 	}
 	tests := []struct {
 		name string
@@ -82,80 +82,80 @@ func TestController_needsUpdate(t *testing.T) {
 		{
 			name: "change spec",
 			args: args{
-				old: newClusterForTest("old", &platformv1.ClusterSpec{Version: "old"}, platformv1.ClusterPhase(""), nil),
-				new: newClusterForTest("new", &platformv1.ClusterSpec{Version: "new"}, platformv1.ClusterPhase(""), nil),
+				old: newClusterForTest("old", &platformv2.ClusterSpec{Version: "old"}, platformv2.ClusterPhase(""), nil),
+				new: newClusterForTest("new", &platformv2.ClusterSpec{Version: "new"}, platformv2.ClusterPhase(""), nil),
 			},
 			want: true,
 		},
 		{
 			name: "Initializing to Running",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterInitializing, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterRunning, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterInitializing, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterRunning, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Initializing to Failed",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterInitializing, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterFailed, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterInitializing, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterFailed, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Running to Failed",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterRunning, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterFailed, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterRunning, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterFailed, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Running to Terminating",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterRunning, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterTerminating, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterRunning, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterTerminating, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Failed to Terminating",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterFailed, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterTerminating, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterFailed, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterTerminating, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Failed to Running",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterFailed, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterRunning, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterFailed, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterRunning, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Failed to Initializing",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterFailed, nil),
-				new: newClusterForTest("new", nil, platformv1.ClusterInitializing, nil),
+				old: newClusterForTest("old", nil, platformv2.ClusterFailed, nil),
+				new: newClusterForTest("new", nil, platformv2.ClusterInitializing, nil),
 			},
 			want: true,
 		},
 		{
 			name: "Initializing last conditon unkonwn to false",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterInitializing, []platformv1.ClusterCondition{{Status: platformv1.ConditionUnknown}}),
-				new: newClusterForTest("new", nil, platformv1.ClusterInitializing, []platformv1.ClusterCondition{{Status: platformv1.ConditionFalse}}),
+				old: newClusterForTest("old", nil, platformv2.ClusterInitializing, []platformv2.ClusterCondition{{Status: platformv2.ConditionUnknown}}),
+				new: newClusterForTest("new", nil, platformv2.ClusterInitializing, []platformv2.ClusterCondition{{Status: platformv2.ConditionFalse}}),
 			},
 			want: false,
 		},
 		{
 			name: "last conditon unkonwn to true",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionUnknown}}),
-				new: newClusterForTest("new", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionFalse}}),
+				old: newClusterForTest("old", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionUnknown}}),
+				new: newClusterForTest("new", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionFalse}}),
 			},
 			want: true,
 		},
@@ -163,7 +163,7 @@ func TestController_needsUpdate(t *testing.T) {
 			name: "Initializing last conditon false retrun true if resync",
 			args: func() args {
 				// resource version equal
-				new := newClusterForTest("new", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionFalse}})
+				new := newClusterForTest("new", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionFalse}})
 				return args{new, new}
 			}(),
 			want: true,
@@ -171,25 +171,25 @@ func TestController_needsUpdate(t *testing.T) {
 		{
 			name: "last conditon true to unknown",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionTrue}}),
-				new: newClusterForTest("new", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionUnknown}}),
+				old: newClusterForTest("old", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionTrue}}),
+				new: newClusterForTest("new", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionUnknown}}),
 			},
 			want: true,
 		},
 		{
 			name: "last conditon false to unknown",
 			args: args{
-				old: newClusterForTest("old", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionFalse}}),
-				new: newClusterForTest("new", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{Status: platformv1.ConditionUnknown}}),
+				old: newClusterForTest("old", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionFalse}}),
+				new: newClusterForTest("new", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{Status: platformv2.ConditionUnknown}}),
 			},
 			want: true,
 		},
 		{
 			name: "health check is not long enough",
 			args: func() args {
-				new := newClusterForTest("old", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{
+				new := newClusterForTest("old", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{
 					Type:          conditionTypeHealthCheck,
-					Status:        platformv1.ConditionTrue,
+					Status:        platformv2.ConditionTrue,
 					LastProbeTime: v1.NewTime(time.Now().Add(-resyncInternal / 2))}})
 				return args{new, new}
 			}(),
@@ -198,9 +198,9 @@ func TestController_needsUpdate(t *testing.T) {
 		{
 			name: "health check is long enough",
 			args: func() args {
-				new := newClusterForTest("old", nil, platformv1.ClusterPhase(""), []platformv1.ClusterCondition{{
+				new := newClusterForTest("old", nil, platformv2.ClusterPhase(""), []platformv2.ClusterCondition{{
 					Type:          conditionTypeHealthCheck,
-					Status:        platformv1.ConditionTrue,
+					Status:        platformv2.ConditionTrue,
 					LastProbeTime: v1.NewTime(time.Now().Add(-resyncInternal - 1))}})
 				return args{new, new}
 			}(),

@@ -34,6 +34,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	platformv1 "tkestack.io/tke/api/platform/v1"
 
 	"github.com/emicklei/go-restful"
 	"github.com/pkg/errors"
@@ -58,10 +59,10 @@ import (
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	kubeaggregatorclientset "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 	applicationclientset "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	tkeclientset "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	tkeclientset "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryclientset "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/cmd/tke-installer/app/config"
 	"tkestack.io/tke/cmd/tke-installer/app/installer/certs"
 	"tkestack.io/tke/cmd/tke-installer/app/installer/constants"
@@ -75,7 +76,7 @@ import (
 	galaxy "tkestack.io/tke/pkg/platform/provider/baremetal/phases/galaxy/images"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	clusterstrategy "tkestack.io/tke/pkg/platform/registry/cluster"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	platformutil "tkestack.io/tke/pkg/platform/util"
 
 	"tkestack.io/tke/pkg/spec"
@@ -99,7 +100,7 @@ const namespace = "tke"
 type TKE struct {
 	Config  *config.Config           `json:"config"`
 	Para    *types.CreateClusterPara `json:"para"`
-	Cluster *v1.Cluster              `json:"cluster"`
+	Cluster *v2.Cluster              `json:"cluster"`
 	Step    int                      `json:"step"`
 	// IncludeSelf means installer is using one of cluster's machines
 	IncludeSelf bool `json:"includeSelf"`
@@ -115,7 +116,7 @@ type TKE struct {
 
 	globalClient      kubernetes.Interface
 	helmClient        *helmaction.Client
-	platformClient    tkeclientset.PlatformV1Interface
+	platformClient    tkeclientset.PlatformV2Interface
 	registryClient    registryclientset.RegistryV1Interface
 	applicationClient applicationclientset.ApplicationV1Interface
 	servers           []string
@@ -127,7 +128,7 @@ func New(config *config.Config) *TKE {
 
 	c.Config = config
 	c.Para = new(types.CreateClusterPara)
-	c.Cluster = new(v1.Cluster)
+	c.Cluster = new(v2.Cluster)
 	c.progress = new(types.ClusterProgress)
 	c.progress.Status = types.StatusUnknown
 
@@ -718,9 +719,9 @@ func (t *TKE) setConfigDefault(config *types.Config) {
 	}
 }
 
-func (t *TKE) setClusterDefault(cluster *platformv1.Cluster, config *types.Config) {
+func (t *TKE) setClusterDefault(cluster *platformv2.Cluster, config *types.Config) {
 	if cluster.APIVersion == "" {
-		cluster.APIVersion = platformv1.SchemeGroupVersion.String()
+		cluster.APIVersion = platformv2.SchemeGroupVersion.String()
 	}
 	if cluster.Kind == "" {
 		cluster.Kind = "Cluster"
@@ -734,30 +735,30 @@ func (t *TKE) setClusterDefault(cluster *platformv1.Cluster, config *types.Confi
 	if cluster.Spec.Version == "" {
 		cluster.Spec.Version = spec.K8sVersions[0] // use newest version
 	}
-	if cluster.Spec.ClusterCIDR == "" {
-		cluster.Spec.ClusterCIDR = "10.244.0.0/16"
+	if cluster.Spec.Networking.ClusterCIDR == "" {
+		cluster.Spec.Networking.ClusterCIDR = "10.244.0.0/16"
 	}
 	if cluster.Spec.Type == "" {
 		cluster.Spec.Type = t.clusterProvider.Name()
 	}
-	if cluster.Spec.NetworkDevice == "" {
-		cluster.Spec.NetworkDevice = "eth0"
+	if cluster.Spec.Networking.NetworkDevice == "" {
+		cluster.Spec.Networking.NetworkDevice = "eth0"
 	}
 	cluster.Spec.Features.EnableMasterSchedule = true
 
 	cluster.Spec.PublicAlternativeNames = append(cluster.Spec.PublicAlternativeNames, t.Para.Config.Gateway.Domain)
 	if config.HA != nil {
 		if t.Para.Config.HA.TKEHA != nil {
-			cluster.Spec.Features.HA = &platformv1.HA{
-				TKEHA: &platformv1.TKEHA{
+			cluster.Spec.Features.HA = &platformv2.HA{
+				TKEHA: &platformv2.TKEHA{
 					VIP:  t.Para.Config.HA.TKEHA.VIP,
 					VRID: t.Para.Config.HA.TKEHA.VRID,
 				},
 			}
 		}
 		if t.Para.Config.HA.ThirdPartyHA != nil {
-			cluster.Spec.Features.HA = &platformv1.HA{
-				ThirdPartyHA: &platformv1.ThirdPartyHA{
+			cluster.Spec.Features.HA = &platformv2.HA{
+				ThirdPartyHA: &platformv2.ThirdPartyHA{
 					VIP:   t.Para.Config.HA.ThirdPartyHA.VIP,
 					VPort: t.Para.Config.HA.ThirdPartyHA.VPort,
 				},
@@ -765,8 +766,8 @@ func (t *TKE) setClusterDefault(cluster *platformv1.Cluster, config *types.Confi
 		}
 	}
 	if config.Business != nil {
-		cluster.Spec.Features.AuthzWebhookAddr = &platformv1.AuthzWebhookAddr{
-			Builtin: &platformv1.BuiltinAuthzWebhookAddr{},
+		cluster.Spec.Features.AuthzWebhookAddr = &platformv2.AuthzWebhookAddr{
+			Builtin: &platformv2.BuiltinAuthzWebhookAddr{},
 		}
 	}
 }
@@ -848,7 +849,7 @@ func (t *TKE) validateCertAndKey(certificate []byte, privateKey []byte, dnsName 
 }
 
 // validateResource validate the cpu and memory of cluster machines whether meets the requirements.
-func (t *TKE) validateResource(cluster *platformv1.Cluster) *apierrors.StatusError {
+func (t *TKE) validateResource(cluster *platformv2.Cluster) *apierrors.StatusError {
 	var (
 		errs             []error
 		cpuSum           int
@@ -1116,7 +1117,7 @@ func (t *TKE) doSteps(ctx context.Context, taskType string) {
 }
 
 func (t *TKE) runAfterClusterReady() bool {
-	return t.Cluster.Status.Phase == platformv1.ClusterRunning
+	return t.Cluster.Status.Phase == platformv2.ClusterRunning
 }
 
 func (t *TKE) generateCertificates(ctx context.Context) error {
@@ -1184,7 +1185,7 @@ func (t *TKE) createGlobalCluster(ctx context.Context) error {
 	t.Cluster.Spec.Features.ContainerRuntime = platformv1.Containerd
 
 	if t.Cluster.Spec.ClusterCredentialRef == nil {
-		credential := &platformv1.ClusterCredential{
+		credential := &platformv2.ClusterCredential{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("cc-%s", t.Cluster.Name),
 			},
@@ -1195,7 +1196,7 @@ func (t *TKE) createGlobalCluster(ctx context.Context) error {
 		t.Cluster.Spec.ClusterCredentialRef = &corev1.LocalObjectReference{Name: credential.Name}
 	}
 
-	for t.Cluster.Status.Phase == platformv1.ClusterInitializing {
+	for t.Cluster.Status.Phase == platformv2.ClusterInitializing {
 		err := t.clusterProvider.OnCreate(ctx, t.Cluster)
 		if err != nil {
 			return err
@@ -1312,6 +1313,10 @@ func (t *TKE) initDataForDeployTKE() error {
 	if err != nil {
 		return err
 	}
+	t.platformClient, err = t.Cluster.PlatformV1ClientsetForBootstrap()
+	if err != nil {
+		return err
+	}
 
 	t.registryClient, err = t.Cluster.RegistryClientsetForBootstrap()
 	if err != nil {
@@ -1324,7 +1329,7 @@ func (t *TKE) initDataForDeployTKE() error {
 	}
 
 	for _, address := range t.Cluster.Status.Addresses {
-		if address.Type == platformv1.AddressReal {
+		if address.Type == platformv2.AddressReal {
 			t.servers = append(t.servers, address.Host)
 		}
 	}

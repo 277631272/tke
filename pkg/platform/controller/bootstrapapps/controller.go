@@ -34,12 +34,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	applicationv1informer "tkestack.io/tke/api/client/informers/externalversions/application/v1"
-	platformv1informer "tkestack.io/tke/api/client/informers/externalversions/platform/v1"
+	platformv2informer "tkestack.io/tke/api/client/informers/externalversions/platform/v2"
 	applicationv1lister "tkestack.io/tke/api/client/listers/application/v1"
-	platformv1lister "tkestack.io/tke/api/client/listers/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2lister "tkestack.io/tke/api/client/listers/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	controllerutil "tkestack.io/tke/pkg/controller"
 	clusterconfig "tkestack.io/tke/pkg/platform/controller/cluster/config"
 	"tkestack.io/tke/pkg/util/log"
@@ -54,24 +54,24 @@ const (
 // BootstrapAppsController is responsible for performing actions dependent upon a cluster phase.
 type BootstrapAppsController struct {
 	queue     workqueue.RateLimitingInterface
-	clsLister platformv1lister.ClusterLister
+	clsLister platformv2lister.ClusterLister
 	clsSynced cache.InformerSynced
 	appLister applicationv1lister.AppLister
 	appSynced cache.InformerSynced
 
 	log               log.Logger
-	platformClient    platformversionedclient.PlatformV1Interface
+	platformClient    platformversionedclient.PlatformV2Interface
 	applicationClient applicationversionedclient.ApplicationV1Interface
 }
 
 // NewBootstrapAppsController creates a new Controller object.
 func NewBootstrapAppsController(
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	clsInformer platformv1informer.ClusterInformer,
+	clsInformer platformv2informer.ClusterInformer,
 	appInformer applicationv1informer.AppInformer,
 	configuration clusterconfig.ClusterControllerConfiguration,
-	finalizerToken platformv1.FinalizerName) *BootstrapAppsController {
+	finalizerToken platformv2.FinalizerName) *BootstrapAppsController {
 	rand.Seed(time.Now().Unix())
 	rateLimit := workqueue.NewMaxOfRateLimiter(
 		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
@@ -92,8 +92,8 @@ func NewBootstrapAppsController(
 	clsInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(oldObj, newObj interface{}) {
-				old, ok1 := oldObj.(*platformv1.Cluster)
-				cur, ok2 := newObj.(*platformv1.Cluster)
+				old, ok1 := oldObj.(*platformv2.Cluster)
+				cur, ok2 := newObj.(*platformv2.Cluster)
 				if ok1 && ok2 && c.needsUpdate(old, cur) {
 					c.enqueue(cur)
 				}
@@ -110,7 +110,7 @@ func NewBootstrapAppsController(
 	return c
 }
 
-func (c *BootstrapAppsController) enqueue(obj *platformv1.Cluster) {
+func (c *BootstrapAppsController) enqueue(obj *platformv2.Cluster) {
 	key, err := controllerutil.KeyFunc(obj)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for object %+v: %v", obj, err))
@@ -119,13 +119,13 @@ func (c *BootstrapAppsController) enqueue(obj *platformv1.Cluster) {
 	c.queue.Add(key)
 }
 
-func (c *BootstrapAppsController) needsUpdate(old *platformv1.Cluster, new *platformv1.Cluster) bool {
+func (c *BootstrapAppsController) needsUpdate(old *platformv2.Cluster, new *platformv2.Cluster) bool {
 	healthCheckDone := false
 	for _, condition := range new.Status.Conditions {
-		if condition.Type == conditionTypeHealthCheck && condition.Status == platformv1.ConditionTrue {
+		if condition.Type == conditionTypeHealthCheck && condition.Status == platformv2.ConditionTrue {
 			healthCheckDone = true
 		}
-		if condition.Type == conditionTypeEnsureBootstrapApps && condition.Status == platformv1.ConditionTrue {
+		if condition.Type == conditionTypeEnsureBootstrapApps && condition.Status == platformv2.ConditionTrue {
 			return false
 		}
 	}
@@ -213,18 +213,18 @@ func (c *BootstrapAppsController) sync(key string) error {
 	return c.syncBootstrapApps(ctx, cluster)
 }
 
-func (c *BootstrapAppsController) syncBootstrapApps(ctx context.Context, cls *platformv1.Cluster) error {
+func (c *BootstrapAppsController) syncBootstrapApps(ctx context.Context, cls *platformv2.Cluster) error {
 	logger := log.FromContext(ctx)
-	conditon := platformv1.ClusterCondition{
+	conditon := platformv2.ClusterCondition{
 		Type:   conditionTypeEnsureBootstrapApps,
-		Status: platformv1.ConditionTrue,
+		Status: platformv2.ConditionTrue,
 	}
 
 	for _, clusterApp := range cls.Spec.BootstrapApps {
 		clusterApp.App.Spec.TargetCluster = cls.Name
 		err := c.installApplication(ctx, clusterApp)
 		if err != nil && apierrors.IsAlreadyExists(err) {
-			conditon.Status = platformv1.ConditionFalse
+			conditon.Status = platformv2.ConditionFalse
 			conditon.Reason = clusterApp.App.Name
 			conditon.Message = err.Error()
 			err := c.updateClsCondition(ctx, cls.Name, conditon)
@@ -238,7 +238,7 @@ func (c *BootstrapAppsController) syncBootstrapApps(ctx context.Context, cls *pl
 	return c.updateClsCondition(ctx, cls.Name, conditon)
 }
 
-func (c *BootstrapAppsController) installApplication(ctx context.Context, clusterApp platformv1.BootstrapApp) error {
+func (c *BootstrapAppsController) installApplication(ctx context.Context, clusterApp platformv2.BootstrapApp) error {
 	app := applicationv1.App{
 		ObjectMeta: clusterApp.App.ObjectMeta,
 		Spec:       clusterApp.App.Spec,
@@ -248,7 +248,7 @@ func (c *BootstrapAppsController) installApplication(ctx context.Context, cluste
 	return err
 }
 
-func (c *BootstrapAppsController) updateClsCondition(ctx context.Context, clsName string, condition platformv1.ClusterCondition) error {
+func (c *BootstrapAppsController) updateClsCondition(ctx context.Context, clsName string, condition platformv2.ClusterCondition) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		cls, err := c.clsLister.Get(clsName)
 		if err != nil {

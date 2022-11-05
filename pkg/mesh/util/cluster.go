@@ -25,7 +25,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/platform/util"
 )
 
@@ -43,7 +43,7 @@ var ClusterNameToClient sync.Map
 var ClusterNameToMonitor sync.Map
 
 // GetClusterClient get kubernetes client via cluster name
-func GetClusterClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV1Interface) (kubernetes.Interface, error) {
+func GetClusterClient(ctx context.Context, clusterName string, platformClient platformversionedclient.PlatformV2Interface) (kubernetes.Interface, error) {
 	// First check from cache
 	if item, ok := ClusterNameToClient.Load(clusterName); ok {
 		// Check if is available

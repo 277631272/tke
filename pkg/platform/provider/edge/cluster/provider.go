@@ -23,13 +23,13 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 
 	"github.com/AlekSi/pointer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/server/mux"
 	"k8s.io/client-go/tools/clientcmd"
 
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
 	"tkestack.io/tke/api/platform"
 	bcluster "tkestack.io/tke/pkg/platform/provider/baremetal/cluster"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/config"
@@ -183,7 +183,7 @@ func NewProvider() (*Provider, error) {
 		if err != nil {
 			log.Errorf("read PlatformAPIClientConfig error: %w", err)
 		} else {
-			p.PlatformClient, err = platformv1client.NewForConfig(restConfig)
+			p.PlatformClient, err = platformv2client.NewForConfig(restConfig)
 			if err != nil {
 				return nil, err
 			}
@@ -214,11 +214,11 @@ func (p *Provider) PreCreate(cluster *types.Cluster) error {
 	if cluster.Spec.Version == "" {
 		cluster.Spec.Version = spec.K8sVersions[0]
 	}
-	if cluster.Spec.ClusterCIDR == "" {
-		cluster.Spec.ClusterCIDR = "10.244.0.0/16"
+	if cluster.Spec.Networking.ClusterCIDR == "" {
+		cluster.Spec.Networking.ClusterCIDR = "10.244.0.0/16"
 	}
-	if cluster.Spec.NetworkDevice == "" {
-		cluster.Spec.NetworkDevice = "eth0"
+	if cluster.Spec.Networking.NetworkDevice == "" {
+		cluster.Spec.Networking.NetworkDevice = "eth0"
 
 	}
 	if cluster.Spec.Features.CSIOperator != nil {
@@ -241,7 +241,7 @@ func (p *Provider) PreCreate(cluster *types.Cluster) error {
 		}
 	}
 
-	if cluster.Spec.Properties.MaxClusterServiceNum == nil && cluster.Spec.ServiceCIDR == nil {
+	if cluster.Spec.Properties.MaxClusterServiceNum == nil && cluster.Spec.Networking.ServiceCIDR == "" {
 		cluster.Spec.Properties.MaxClusterServiceNum = pointer.ToInt32(256)
 	}
 	if cluster.Spec.Properties.MaxNodePodNum == nil {

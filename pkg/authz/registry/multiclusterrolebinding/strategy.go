@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"strings"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	"tkestack.io/tke/pkg/authz/constant"
 	authzprovider "tkestack.io/tke/pkg/authz/provider"
@@ -42,7 +42,7 @@ type Strategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
 	roleGetter     rest.Getter
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 var _ rest.RESTCreateStrategy = &Strategy{}
@@ -53,7 +53,7 @@ const NamePrefix = "mcrb-"
 
 // NewStrategy creates a strategy that is the default logic that applies when
 // creating and updating namespace set objects.
-func NewStrategy(roleGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) *Strategy {
+func NewStrategy(roleGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) *Strategy {
 	return &Strategy{authz.Scheme, namesutil.Generator, roleGetter, platformClient}
 }
 

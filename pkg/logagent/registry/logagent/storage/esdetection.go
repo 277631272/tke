@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/logagent"
 	"tkestack.io/tke/pkg/logagent/util"
 	"tkestack.io/tke/pkg/util/log"
@@ -44,7 +44,7 @@ import (
 // TokenREST implements the REST endpoint.
 type ESDetectionREST struct {
 	apiKeyStore    *registry.Store
-	PlatformClient platformversionedclient.PlatformV1Interface
+	PlatformClient platformversionedclient.PlatformV2Interface
 }
 
 var _ = rest.Creater(&ESDetectionREST{})

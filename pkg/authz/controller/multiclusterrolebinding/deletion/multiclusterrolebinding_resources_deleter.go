@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiauthzv1 "tkestack.io/tke/api/authz/v1"
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/authz/provider"
 	"tkestack.io/tke/pkg/util/log"
 )
@@ -15,7 +15,7 @@ type MultiClusterRoleBindingDeleter interface {
 	Delete(ctx context.Context, mcrb *apiauthzv1.MultiClusterRoleBinding, provider provider.Provider) error
 }
 
-func New(client clientset.Interface, platformClient platformversionedclient.PlatformV1Interface) MultiClusterRoleBindingDeleter {
+func New(client clientset.Interface, platformClient platformversionedclient.PlatformV2Interface) MultiClusterRoleBindingDeleter {
 	return &MultiClusterRoleBindingResourcesDeleter{
 		client:         client,
 		platformClient: platformClient,
@@ -24,7 +24,7 @@ func New(client clientset.Interface, platformClient platformversionedclient.Plat
 
 type MultiClusterRoleBindingResourcesDeleter struct {
 	client         clientset.Interface
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 func (c *MultiClusterRoleBindingResourcesDeleter) Delete(ctx context.Context, mcrb *apiauthzv1.MultiClusterRoleBinding, provider provider.Provider) error {

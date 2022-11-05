@@ -27,7 +27,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage/names"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	authzprovider "tkestack.io/tke/pkg/authz/provider"
 	"tkestack.io/tke/pkg/util/log"
@@ -39,7 +39,7 @@ type Strategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
 	policyGetter   rest.Getter
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 const NamePrefix = "rol-"
@@ -59,7 +59,7 @@ func ShouldDeleteDuringUpdate(ctx context.Context, key string, obj, existing run
 
 // NewStrategy creates a strategy that is the default logic that applies when
 // creating and updating namespace set objects.
-func NewStrategy(policyGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) *Strategy {
+func NewStrategy(policyGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) *Strategy {
 	return &Strategy{authz.Scheme, namesutil.Generator, policyGetter, platformClient}
 }
 

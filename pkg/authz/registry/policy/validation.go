@@ -24,14 +24,14 @@ import (
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 )
 
 var ValidatePolicyName = apimachineryvalidation.NameIsDNSLabel
 
 // ValidatePolicy tests if required fields in the cluster are set.
-func ValidatePolicy(policy *authz.Policy, platformClient platformversionedclient.PlatformV1Interface) field.ErrorList {
+func ValidatePolicy(policy *authz.Policy, platformClient platformversionedclient.PlatformV2Interface) field.ErrorList {
 	allErrs := apimachineryvalidation.ValidateObjectMeta(&policy.ObjectMeta, true, ValidatePolicyName, field.NewPath("metadata"))
 	for i, rule := range policy.Rules {
 		fldPath := field.NewPath("rules").Index(i)
@@ -56,7 +56,7 @@ func ValidatePolicy(policy *authz.Policy, platformClient platformversionedclient
 
 // ValidatePolicyUpdate tests if required fields in the namespace set are
 // set during an update.
-func ValidatePolicyUpdate(ctx context.Context, policy *authz.Policy, old *authz.Policy, platformClient platformversionedclient.PlatformV1Interface) field.ErrorList {
+func ValidatePolicyUpdate(ctx context.Context, policy *authz.Policy, old *authz.Policy, platformClient platformversionedclient.PlatformV2Interface) field.ErrorList {
 	_, tenantID := authentication.UsernameAndTenantID(ctx)
 	if tenantID == "" {
 		tenantID = "default"

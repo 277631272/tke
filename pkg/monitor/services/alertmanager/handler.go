@@ -21,17 +21,17 @@ package alertmanager
 import (
 	"sync"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/monitor/services"
 )
 
 type processor struct {
 	sync.Mutex
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 // NewProcessor returns a a processor to handle alertmanager rules changes
-func NewProcessor(platformClient platformversionedclient.PlatformV1Interface) services.RouteProcessor {
+func NewProcessor(platformClient platformversionedclient.PlatformV2Interface) services.RouteProcessor {
 	return &processor{
 		platformClient: platformClient,
 	}

@@ -22,10 +22,10 @@ import (
 	"context"
 
 	"tkestack.io/tke/pkg/platform/provider/util/mark"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
+	typesv2 "tkestack.io/tke/pkg/platform/types/v2"
 )
 
-func (p *Provider) EnsureCleanClusterMark(ctx context.Context, c *typesv1.Cluster) error {
+func (p *Provider) EnsureCleanClusterMark(ctx context.Context, c *typesv2.Cluster) error {
 	if clientset, err := c.Clientset(); err == nil {
 		mark.Delete(ctx, clientset)
 	}

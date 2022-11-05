@@ -30,7 +30,7 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubectl/pkg/util/rbac"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	authzprovider "tkestack.io/tke/pkg/authz/provider"
 	"tkestack.io/tke/pkg/util/log"
@@ -41,7 +41,7 @@ import (
 type Strategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 const (
@@ -54,7 +54,7 @@ var _ rest.RESTDeleteStrategy = &Strategy{}
 
 // NewStrategy creates a strategy that is the default logic that applies when
 // creating and updating namespace set objects.
-func NewStrategy(platformClient platformversionedclient.PlatformV1Interface) *Strategy {
+func NewStrategy(platformClient platformversionedclient.PlatformV2Interface) *Strategy {
 	return &Strategy{authz.Scheme, namesutil.Generator, platformClient}
 }
 

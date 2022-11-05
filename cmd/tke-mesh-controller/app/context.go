@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/cmd/tke-mesh-controller/app/config"
 	"tkestack.io/tke/pkg/controller"
@@ -72,7 +72,7 @@ type ControllerContext struct {
 	ResyncPeriod            func() time.Duration
 	ControllerStartInterval time.Duration
 
-	PlatformClient platformv1.PlatformV1Interface
+	PlatformClient platformv2.PlatformV2Interface
 	MeshConfig     *meshconfig.MeshConfiguration
 }
 
@@ -125,7 +125,7 @@ func CreateControllerContext(cfg *config.Config, rootClientBuilder controller.Cl
 		if err != nil {
 			return ControllerContext{}, fmt.Errorf("failed to create the platform client: %v", err)
 		}
-		ctx.PlatformClient = platformClient.PlatformV1()
+		ctx.PlatformClient = platformClient.PlatformV2()
 	}
 
 	return ctx, nil

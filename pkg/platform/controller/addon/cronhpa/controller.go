@@ -374,11 +374,11 @@ func needUpgrade(cronHPA *v1.CronHPA) bool {
 }
 
 func (c *Controller) installCronHPA(ctx context.Context, cronHPA *v1.CronHPA) error {
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -506,14 +506,14 @@ func serviceCronHPA() *corev1.Service {
 func int32Ptr(i int32) *int32 { return &i }
 
 func (c *Controller) uninstallCronHPA(ctx context.Context, cronHPA *v1.CronHPA) error {
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil && errors.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -543,7 +543,7 @@ func (c *Controller) watchCronHPAHealth(ctx context.Context, key string) func() 
 			return false, err
 		}
 
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -554,7 +554,7 @@ func (c *Controller) watchCronHPAHealth(ctx context.Context, key string) func() 
 			log.Info("Health check over.")
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -575,7 +575,7 @@ func (c *Controller) watchCronHPAHealth(ctx context.Context, key string) func() 
 func (c *Controller) checkCronHPAStatus(ctx context.Context, cronHPA *v1.CronHPA, key string, initDelay time.Time) func() (bool, error) {
 	return func() (bool, error) {
 		log.Info("Start to check CronHPA health", log.String("CronHPA", cronHPA.Name))
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -586,7 +586,7 @@ func (c *Controller) checkCronHPAStatus(ctx context.Context, cronHPA *v1.CronHPA
 			log.Debug("Checking over CronHPA addon status")
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -620,7 +620,7 @@ func (c *Controller) checkCronHPAStatus(ctx context.Context, cronHPA *v1.CronHPA
 func (c *Controller) upgradeCronHPA(ctx context.Context, cronHPA *v1.CronHPA, key string, initDelay time.Time) func() (bool, error) {
 	return func() (bool, error) {
 		log.Info("Start to upgrade CronHPA", log.String("CronHPA", cronHPA.Name))
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, cronHPA.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -631,7 +631,7 @@ func (c *Controller) upgradeCronHPA(ctx context.Context, cronHPA *v1.CronHPA, ke
 			log.Debug("Upgrading CronHPA", log.String("CronHPA", cronHPA.Name))
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}

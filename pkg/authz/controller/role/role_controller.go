@@ -31,7 +31,7 @@ import (
 	"time"
 	apiauthzv1 "tkestack.io/tke/api/authz/v1"
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	authzv1informer "tkestack.io/tke/api/client/informers/externalversions/authz/v1"
 	authzv1 "tkestack.io/tke/api/client/listers/authz/v1"
 	"tkestack.io/tke/pkg/authz/constant"
@@ -49,7 +49,7 @@ const (
 
 type Controller struct {
 	client         clientset.Interface
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	queue          workqueue.RateLimitingInterface
 	roleLister     authzv1.RoleLister
 	roleSynced     cache.InformerSynced
@@ -61,7 +61,7 @@ type Controller struct {
 // NewController creates a new Controller object.
 func NewController(
 	client clientset.Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	roleInformer authzv1informer.RoleInformer,
 	mcrbInformer authzv1informer.MultiClusterRoleBindingInformer,
 	resyncPeriod time.Duration) *Controller {

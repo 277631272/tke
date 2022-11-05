@@ -26,7 +26,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
 	"tkestack.io/tke/pkg/util/log"
 
 	"github.com/thoas/go-funk"

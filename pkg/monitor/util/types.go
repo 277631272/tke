@@ -23,7 +23,7 @@ import (
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"tkestack.io/tke/api/monitor"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 
 	v1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	alert_config "github.com/prometheus/alertmanager/config"
@@ -82,8 +82,8 @@ type RouteOperator interface {
 type ClusterClientSets map[string]*kubernetes.Clientset
 type MetricServerClientSets map[string]*metricsv.Clientset
 type DynamicClientSet map[string]dynamic.Interface
-type ClusterSet map[string]*platformv1.Cluster
-type ClusterCredentialSet map[string]*platformv1.ClusterCredential
+type ClusterSet map[string]*platformv2.Cluster
+type ClusterCredentialSet map[string]*platformv2.ClusterCredential
 type ClusterStatisticSet map[string]*monitor.ClusterStatistic
 
 type WorkloadCounter struct {

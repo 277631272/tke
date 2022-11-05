@@ -27,11 +27,11 @@ import (
 	platformv1 "tkestack.io/tke/api/platform/v1"
 	kubeadmv1beta2 "tkestack.io/tke/pkg/platform/provider/baremetal/apis/kubeadm/v1beta2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/images"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/apiclient"
 )
 
-func (p *Provider) getKubeadmJoinConfig(c *v1.Cluster, machineIP string) *kubeadmv1beta2.JoinConfiguration {
+func (p *Provider) getKubeadmJoinConfig(c *v2.Cluster, machineIP string) *kubeadmv1beta2.JoinConfiguration {
 	apiServerEndpoint, err := c.Host()
 	if err != nil {
 		panic(err)
@@ -44,11 +44,11 @@ func (p *Provider) getKubeadmJoinConfig(c *v1.Cluster, machineIP string) *kubead
 	} else {
 		kubeletExtraArgs["node-labels"] = apiclient.GetNodeIPV6Label(machineIP)
 	}
-	if c.Cluster.Spec.Features.EnableCilium && c.Cluster.Spec.NetworkArgs["networkMode"] == "underlay" {
-		if asn, ok := c.Cluster.Spec.NetworkArgs["asn"]; ok {
+	if c.Cluster.Spec.Features.EnableCilium && c.Cluster.Spec.Networking.NetworkArgs["networkMode"] == "underlay" {
+		if asn, ok := c.Cluster.Spec.Networking.NetworkArgs["asn"]; ok {
 			kubeletExtraArgs["node-labels"] = fmt.Sprintf("%s,%s=%s", kubeletExtraArgs["node-labels"], apiclient.LabelASNCilium, asn)
 		}
-		if switchIP, ok := c.Cluster.Spec.NetworkArgs["switch-ip"]; ok {
+		if switchIP, ok := c.Cluster.Spec.Networking.NetworkArgs["switch-ip"]; ok {
 			kubeletExtraArgs["node-labels"] = fmt.Sprintf("%s,%s=%s", kubeletExtraArgs["node-labels"], apiclient.LabelSwitchIPCilium, switchIP)
 		}
 	}
@@ -83,7 +83,7 @@ func (p *Provider) getKubeadmJoinConfig(c *v1.Cluster, machineIP string) *kubead
 	}
 }
 
-func (p *Provider) getKubeletExtraArgs(c *v1.Cluster) map[string]string {
+func (p *Provider) getKubeletExtraArgs(c *v2.Cluster) map[string]string {
 	args := map[string]string{}
 	if c.Cluster.Spec.Features.ContainerRuntime == platformv1.Docker {
 		args = map[string]string{
@@ -92,7 +92,7 @@ func (p *Provider) getKubeletExtraArgs(c *v1.Cluster) map[string]string {
 	}
 	// for containerd runtimes, no need to set pod-infra-container-image
 
-	utilruntime.Must(mergo.Merge(&args, c.Spec.KubeletExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, c.Spec.Kubelet.ExtraArgs))
 	utilruntime.Must(mergo.Merge(&args, p.config.Kubelet.ExtraArgs))
 
 	return args

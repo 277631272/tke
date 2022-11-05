@@ -29,7 +29,7 @@ import (
 	"time"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
 	businessv1 "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/cmd/tke-monitor-controller/app/config"
 	"tkestack.io/tke/pkg/controller"
@@ -72,7 +72,7 @@ type ControllerContext struct {
 	ControllerStartInterval time.Duration
 
 	BusinessClient businessv1.BusinessV1Interface
-	PlatformClient platformv1.PlatformV1Interface
+	PlatformClient platformv2.PlatformV2Interface
 	MonitorConfig  *monitorconfig.MonitorConfiguration
 	// Remote write/read address for prometheus
 	RemoteAddresses []string
@@ -138,7 +138,7 @@ func CreateControllerContext(cfg *config.Config, rootClientBuilder controller.Cl
 		if err != nil {
 			return ControllerContext{}, fmt.Errorf("failed to create the platform client: %v", err)
 		}
-		ctx.PlatformClient = platformClient.PlatformV1()
+		ctx.PlatformClient = platformClient.PlatformV2()
 	}
 
 	return ctx, nil

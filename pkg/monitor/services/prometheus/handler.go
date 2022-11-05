@@ -21,17 +21,17 @@ package prometheus
 import (
 	"sync"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/monitor/services"
 )
 
 type processor struct {
 	sync.Mutex
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 // NewProcessor returns a processor to handle prometheus rules changes
-func NewProcessor(platformClient platformversionedclient.PlatformV1Interface) services.RuleProcessor {
+func NewProcessor(platformClient platformversionedclient.PlatformV2Interface) services.RuleProcessor {
 	return &processor{
 		platformClient: platformClient,
 	}

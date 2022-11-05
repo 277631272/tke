@@ -30,9 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilsnet "k8s.io/utils/net"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/gpu"
 	utilmath "tkestack.io/tke/pkg/util/math"
 	"tkestack.io/tke/pkg/util/ssh"
@@ -41,7 +41,7 @@ import (
 const MaxTimeOffset = 5
 
 // ValidateMachine validates a given machine.
-func ValidateMachine(machine *platform.Machine, cluster *platformv1.Cluster, platformClient platformv1client.PlatformV1Interface) field.ErrorList {
+func ValidateMachine(machine *platform.Machine, cluster *platformv2.Cluster, platformClient platformv2client.PlatformV2Interface) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	allErrs = append(allErrs, ValidateMachineSpec(&machine.Spec, cluster, field.NewPath("spec"), platformClient)...)
@@ -50,7 +50,7 @@ func ValidateMachine(machine *platform.Machine, cluster *platformv1.Cluster, pla
 }
 
 // ValidateMachineSpec validates a given machine spec.
-func ValidateMachineSpec(spec *platform.MachineSpec, cluster *platformv1.Cluster, fldPath *field.Path, platformClient platformv1client.PlatformV1Interface) field.ErrorList {
+func ValidateMachineSpec(spec *platform.MachineSpec, cluster *platformv2.Cluster, fldPath *field.Path, platformClient platformv2client.PlatformV2Interface) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if cluster.Name != "" {
@@ -83,21 +83,21 @@ func ValidateMachineSpec(spec *platform.MachineSpec, cluster *platformv1.Cluster
 }
 
 // ValidateMachineWithCluster validates a given machine by ip with cluster.
-func ValidateMachineWithCluster(ctx context.Context, ip string, fldPath *field.Path, cluster *platformv1.Cluster, platformClient platformv1client.PlatformV1Interface) field.ErrorList {
+func ValidateMachineWithCluster(ctx context.Context, ip string, fldPath *field.Path, cluster *platformv2.Cluster, platformClient platformv2client.PlatformV2Interface) field.ErrorList {
 	allErrs := field.ErrorList{}
 	for _, machine := range cluster.Spec.Machines {
 		if machine.IP == ip {
 			allErrs = append(allErrs, field.Duplicate(fldPath, ip))
 		}
 	}
-	cidrs := strings.Split(cluster.Spec.ClusterCIDR, ",")
+	cidrs := strings.Split(cluster.Spec.Networking.ClusterCIDR, ",")
 	for _, cidr := range cidrs {
 		if utilsnet.IsIPv6CIDRString(cidr) {
 			return allErrs
 		}
 	}
 
-	_, cidr, _ := net.ParseCIDR(cluster.Spec.ClusterCIDR)
+	_, cidr, _ := net.ParseCIDR(cluster.Spec.Networking.ClusterCIDR)
 	ones, _ := cidr.Mask.Size()
 	maxNode := math.Exp2(float64(cluster.Status.NodeCIDRMaskSize - int32(ones)))
 

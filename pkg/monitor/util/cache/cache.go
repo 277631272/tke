@@ -35,9 +35,9 @@ import (
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/monitor"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/monitor/util"
 	"tkestack.io/tke/pkg/platform/util/addon"
 	"tkestack.io/tke/pkg/util/log"
@@ -91,12 +91,12 @@ var (
 
 type Cacher interface {
 	Reload()
-	GetClusterOverviewResult(clusters []*platformv1.Cluster) *monitor.ClusterOverviewResult
+	GetClusterOverviewResult(clusters []*platformv2.Cluster) *monitor.ClusterOverviewResult
 }
 
 type cacher struct {
 	sync.RWMutex
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 
 	// businessClient is not required, and needed to determine if it's nil
 	businessClient      businessversionedclient.BusinessV1Interface
@@ -149,10 +149,10 @@ func (c *cacher) getClusters(ctx context.Context) {
 		allTask := len(clusters.Items)
 		started := time.Now()
 		for i := range clusters.Items {
-			if clusters.Items[i].Status.Phase == platformv1.ClusterFailed {
+			if clusters.Items[i].Status.Phase == platformv2.ClusterFailed {
 				curClusterAbnormal++
 			}
-			go func(cls platformv1.Cluster, dynamicClientSets util.DynamicClientSet) {
+			go func(cls platformv2.Cluster, dynamicClientSets util.DynamicClientSet) {
 				defer func() {
 					defer wg.Done()
 					atomic.AddInt32(&finished, 1)
@@ -162,7 +162,7 @@ func (c *cacher) getClusters(ctx context.Context) {
 				clusterID := cls.GetName()
 				clusterDisplayName := cls.Spec.DisplayName
 				tenantID := cls.Spec.TenantID
-				if cls.Status.Phase != platformv1.ClusterRunning {
+				if cls.Status.Phase != platformv2.ClusterRunning {
 					syncMap.Store(clusterID, map[string]interface{}{
 						ClusterDisplayName: clusterDisplayName,
 						ClusterPhase:       string(cls.Status.Phase),
@@ -217,7 +217,7 @@ func (c *cacher) getClusters(ctx context.Context) {
 			clusterDisplayName := val[ClusterDisplayName].(string)
 			tenantID := val[TenantID].(string)
 			clusterPhase := val[ClusterPhase].(string)
-			if clusterPhase == string(platformv1.ClusterRunning) {
+			if clusterPhase == string(platformv2.ClusterRunning) {
 				clusterClientSet := val[ClusterClientSet].(*kubernetes.Clientset)
 				workloadCounter := val[WorkloadCounter].(*util.WorkloadCounter)
 				resourceCounter := val[ResourceCounter].(*util.ResourceCounter)
@@ -280,7 +280,7 @@ func (c *cacher) getClusters(ctx context.Context) {
 		curClusterStatisticSet, curClusterClientSets)
 }
 
-func (c *cacher) getMetricServerClientSet(ctx context.Context, cls *platformv1.Cluster) (*metricsv.Clientset, error) {
+func (c *cacher) getMetricServerClientSet(ctx context.Context, cls *platformv2.Cluster) (*metricsv.Clientset, error) {
 	cc, err := addon.GetClusterCredentialV1(ctx, c.platformClient, cls)
 	if err != nil {
 		log.Error("query cluster credential failed", log.Any("cluster", cls.GetName()), log.Err(err))
@@ -296,7 +296,7 @@ func (c *cacher) getMetricServerClientSet(ctx context.Context, cls *platformv1.C
 func (c *cacher) getProjects() {
 }
 
-func (c *cacher) GetClusterOverviewResult(clusters []*platformv1.Cluster) *monitor.ClusterOverviewResult {
+func (c *cacher) GetClusterOverviewResult(clusters []*platformv2.Cluster) *monitor.ClusterOverviewResult {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -332,7 +332,7 @@ func (c *cacher) GetClusterOverviewResult(clusters []*platformv1.Cluster) *monit
 	return result
 }
 
-func NewCacher(platformClient platformversionedclient.PlatformV1Interface,
+func NewCacher(platformClient platformversionedclient.PlatformV2Interface,
 	businessClient businessversionedclient.BusinessV1Interface) Cacher {
 	return &cacher{
 		platformClient:      platformClient,
@@ -694,8 +694,8 @@ func (c *cacher) getWorkloadCounter(ctx context.Context, curDynamicClientSet uti
 func (c *cacher) getDynamicClients(ctx context.Context) (util.ClusterSet,
 	util.ClusterCredentialSet, util.DynamicClientSet) {
 	var err error
-	var clusters *platformv1.ClusterList
-	var clusterCredentials *platformv1.ClusterCredentialList
+	var clusters *platformv2.ClusterList
+	var clusterCredentials *platformv2.ClusterCredentialList
 	resClusterSet := make(util.ClusterSet)
 	resClusterCredentialSet := make(util.ClusterCredentialSet)
 	resDynamicClientSet := make(util.DynamicClientSet)

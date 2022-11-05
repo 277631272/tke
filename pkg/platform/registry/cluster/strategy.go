@@ -127,8 +127,12 @@ func (s *Strategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 		platform.ClusterFinalize,
 	}
 
-	if cluster.Spec.DNSDomain == "" {
-		cluster.Spec.DNSDomain = "cluster.local"
+	if cluster.Spec.Networking == nil {
+		cluster.Spec.Networking = &platform.Networking{}
+	}
+
+	if cluster.Spec.Networking.DNSDomain == "" {
+		cluster.Spec.Networking.DNSDomain = "cluster.local"
 	}
 
 	clusterProvider, err := clusterprovider.GetProvider(cluster.Spec.Type)

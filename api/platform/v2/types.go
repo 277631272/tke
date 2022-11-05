@@ -20,19 +20,17 @@ package v2
 
 import (
 	"fmt"
-	"math/rand"
-	"net"
-	"os"
-	"path"
-	strings "strings"
-
 	pkgerrors "github.com/pkg/errors"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
+	"math/rand"
+	"net"
+	"os"
+	"path"
+	"strings"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 )
 
@@ -539,7 +537,6 @@ func (cc ClusterCredential) RESTConfig(cls *Cluster) *rest.Config {
 
 	return config
 }
-
 func clusterHost(cluster *Cluster) string {
 	address, err := clusterAddress(cluster)
 	if err != nil {
@@ -832,6 +829,20 @@ type ClusterComponentReplicas struct {
 	Available int32 `json:"available" protobuf:"varint,3,name=available"`
 	Updated   int32 `json:"updated" protobuf:"varint,4,name=updated"`
 }
+
+// ConditionStatus defines the status of Condition.
+type ConditionStatus string
+
+// These are valid condition statuses.
+// "ConditionTrue" means a resource is in the condition.
+// "ConditionFalse" means a resource is not in the condition.
+// "ConditionUnknown" means server can't decide if a resource is in the condition
+// or not.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
 
 // AddonLevel indicates the level of cluster addon.
 type AddonLevel string
@@ -1144,20 +1155,6 @@ type ConfigMapList struct {
 	// Items is the list of ConfigMaps.
 	Items []ConfigMap `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
-
-// ConditionStatus defines the status of Condition.
-type ConditionStatus string
-
-// These are valid condition statuses.
-// "ConditionTrue" means a resource is in the condition.
-// "ConditionFalse" means a resource is not in the condition.
-// "ConditionUnknown" means server can't decide if a resource is in the condition
-// or not.
-const (
-	ConditionTrue    ConditionStatus = "True"
-	ConditionFalse   ConditionStatus = "False"
-	ConditionUnknown ConditionStatus = "Unknown"
-)
 
 // AddonSpec describes the attributes on a Addon.
 type AddonSpec struct {

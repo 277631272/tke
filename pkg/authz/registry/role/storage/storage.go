@@ -32,7 +32,7 @@ import (
 	storageerr "k8s.io/apiserver/pkg/storage/errors"
 	"k8s.io/apiserver/pkg/util/dryrun"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	apiserverutil "tkestack.io/tke/pkg/apiserver/util"
 	"tkestack.io/tke/pkg/authz/registry/role"
@@ -46,7 +46,7 @@ type Storage struct {
 }
 
 // NewStorage returns a Storage object that will work against configmap.
-func NewStorage(optsGetter genericregistry.RESTOptionsGetter, policyGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) *Storage {
+func NewStorage(optsGetter genericregistry.RESTOptionsGetter, policyGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) *Storage {
 	strategy := role.NewStrategy(policyGetter, platformClient)
 	store := &registry.Store{
 		NewFunc:                  func() runtime.Object { return &authz.Role{} },

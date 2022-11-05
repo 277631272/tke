@@ -34,10 +34,10 @@ import (
 	"time"
 	apiauthzv1 "tkestack.io/tke/api/authz/v1"
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	authzv1informer "tkestack.io/tke/api/client/informers/externalversions/authz/v1"
 	authzv1 "tkestack.io/tke/api/client/listers/authz/v1"
-	apiplatformv1 "tkestack.io/tke/api/platform/v1"
+	apiplatformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/authz/constant"
 	"tkestack.io/tke/pkg/authz/controller/multiclusterrolebinding/deletion"
 	authzprovider "tkestack.io/tke/pkg/authz/provider"
@@ -63,7 +63,7 @@ const (
 
 type Controller struct {
 	client         clientset.Interface
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	queue          workqueue.RateLimitingInterface
 	policyLister   authzv1.PolicyLister
 	policySynced   cache.InformerSynced
@@ -78,7 +78,7 @@ type Controller struct {
 // NewController creates a new Controller object.
 func NewController(
 	client clientset.Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	policyInformer authzv1informer.PolicyInformer,
 	roleInformer authzv1informer.RoleInformer,
 	mcrbInformer authzv1informer.MultiClusterRoleBindingInformer,
@@ -314,7 +314,7 @@ func (c *Controller) handleActive(ctx context.Context, mcrb *apiauthzv1.MultiClu
 			log.Warnf("GetV1ClusterByName failed, cluster: '%s', user: '%s', err: '%#v'", cls, mcrb.Spec.Username, err)
 			return err
 		}
-		if cluster.Status.Phase != "Waiting" && cluster.Status.Phase != apiplatformv1.ClusterInitializing && cluster.Status.Phase != apiplatformv1.ClusterTerminating {
+		if cluster.Status.Phase != "Waiting" && cluster.Status.Phase != apiplatformv2.ClusterInitializing && cluster.Status.Phase != apiplatformv2.ClusterTerminating {
 			clusters = append(clusters, cls)
 		}
 		subject, err := provider.GetSubject(ctx, mcrb.Spec.Username, cluster)

@@ -20,13 +20,12 @@ package machine
 
 import (
 	"context"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/clientcmd"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/config"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
@@ -52,7 +51,7 @@ type Provider struct {
 	*machineprovider.DelegateProvider
 
 	config         *config.Config
-	platformClient platformv1client.PlatformV1Interface
+	platformClient platformv2client.PlatformV2Interface
 }
 
 func NewProvider() (*Provider, error) {
@@ -123,7 +122,7 @@ func NewProvider() (*Provider, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.platformClient, err = platformv1client.NewForConfig(restConfig)
+		p.platformClient, err = platformv2client.NewForConfig(restConfig)
 		if err != nil {
 			return nil, err
 		}

@@ -23,28 +23,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"net"
 	"os/exec"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/util/rand"
-	platformv1 "tkestack.io/tke/api/platform/v1"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/log"
 )
 
-func GetMasterEndpoint(addresses []platformv1.ClusterAddress) (string, error) {
-	var advertise, internal []*platformv1.ClusterAddress
+func GetMasterEndpoint(addresses []platformv2.ClusterAddress) (string, error) {
+	var advertise, internal []*platformv2.ClusterAddress
 	for _, one := range addresses {
-		if one.Type == platformv1.AddressAdvertise {
+		if one.Type == platformv2.AddressAdvertise {
 			advertise = append(advertise, &one)
 		}
-		if one.Type == platformv1.AddressReal {
+		if one.Type == platformv2.AddressReal {
 			internal = append(internal, &one)
 		}
 	}
 
-	var address *platformv1.ClusterAddress
+	var address *platformv2.ClusterAddress
 	if advertise != nil {
 		address = advertise[rand.Intn(len(advertise))]
 	} else {
@@ -59,8 +58,8 @@ func GetMasterEndpoint(addresses []platformv1.ClusterAddress) (string, error) {
 	return fmt.Sprintf("https://%s:%d", address.Host, address.Port), nil
 }
 
-func ExcuteCustomizedHook(ctx context.Context, c *v1.Cluster, htype platformv1.HookType, machines []platformv1.ClusterMachine) error {
-	hook := c.Spec.Features.Hooks[htype]
+func ExcuteCustomizedHook(ctx context.Context, c *v2.Cluster, htype platformv2.HookType, machines []platformv2.ClusterMachine) error {
+	hook := c.Spec.Features.Hooks[platformv2.HookType(htype)]
 	if hook == "" {
 		return nil
 	}

@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	v1 "tkestack.io/tke/api/business/v1"
 	v1clientset "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	cls "tkestack.io/tke/pkg/business/controller/namespace/cluster"
 	platformutil "tkestack.io/tke/pkg/platform/util"
 	"tkestack.io/tke/pkg/util/log"
@@ -43,7 +43,7 @@ type NamespacedResourcesDeleterInterface interface {
 // NewNamespacedResourcesDeleter to create the namespacedResourcesDeleter that
 // implement the NamespacedResourcesDeleterInterface by given client and
 // configure.
-func NewNamespacedResourcesDeleter(platformClient platformversionedclient.PlatformV1Interface, businessClient v1clientset.BusinessV1Interface,
+func NewNamespacedResourcesDeleter(platformClient platformversionedclient.PlatformV2Interface, businessClient v1clientset.BusinessV1Interface,
 	finalizerToken v1.FinalizerName,
 	deleteNamespaceWhenDone bool) NamespacedResourcesDeleterInterface {
 	d := &namespacedResourcesDeleter{
@@ -61,7 +61,7 @@ var _ NamespacedResourcesDeleterInterface = &namespacedResourcesDeleter{}
 type namespacedResourcesDeleter struct {
 	// Client to manipulate the business.
 	businessClient v1clientset.BusinessV1Interface
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	// The finalizer token that should be removed from the namespace
 	// when all resources in that namespace have been deleted.
 	finalizerToken v1.FinalizerName
@@ -71,10 +71,11 @@ type namespacedResourcesDeleter struct {
 
 // Delete deletes all resources in the given namespace.
 // Before deleting resources:
-// * It ensures that deletion timestamp is set on the
-//   namespace (does nothing if deletion timestamp is missing).
-// * Verifies that the namespace is in the "terminating" phase
-//   (updates the namespace phase if it is not yet marked terminating)
+//   - It ensures that deletion timestamp is set on the
+//     namespace (does nothing if deletion timestamp is missing).
+//   - Verifies that the namespace is in the "terminating" phase
+//     (updates the namespace phase if it is not yet marked terminating)
+//
 // After deleting the resources:
 // * It removes finalizer token from the given namespace.
 // * Deletes the namespace if deleteNamespaceWhenDone is true.
