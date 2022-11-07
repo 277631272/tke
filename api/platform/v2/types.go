@@ -202,29 +202,33 @@ type ClusterSpec struct {
 	// +optional
 	BootstrapApps BootstrapApps `json:"bootstrapApps,omitempty" protobuf:"bytes,26,opt,name=bootstrapApps"`
 
+	// AppVersion is the overall version of system components
+	// +optional
+	AppVersion string `json:"appVersion,omitempty" protobuf:"bytes,27,opt,name=appVersion"`
+
 	// Networking holds configuration for the networking topology of the cluster.
 	// +optional
-	Networking *Networking `json:"networking,omitempty" protobuf:"bytes,27,opt,name=networking"`
+	Networking *Networking `json:"networking,omitempty" protobuf:"bytes,36,opt,name=networking"`
 
 	// APIServer contains extra settings for the API server control plane component
 	// +optional
-	APIServer *APIServer `json:"apiserver,omitempty" protobuf:"bytes,28,opt,name=apiserver"`
+	APIServer *APIServer `json:"apiserver,omitempty" protobuf:"bytes,37,opt,name=apiserver"`
 
 	// ControllerManager contains extra settings for the controller manager control plane component
 	// +optional
-	ControllerManager *ControllerManager `json:"controllerManager,omitempty" protobuf:"bytes,29,opt,name=controllerManager"`
+	ControllerManager *ControllerManager `json:"controllerManager,omitempty" protobuf:"bytes,38,opt,name=controllerManager"`
 
 	// Scheduler contains extra settings for the scheduler control plane component
 	// +optional
-	Scheduler *Scheduler `json:"scheduler,omitempty" protobuf:"bytes,30,opt,name=scheduler"`
+	Scheduler *Scheduler `json:"scheduler,omitempty" protobuf:"bytes,39,opt,name=scheduler"`
 
 	// DockerInfo holds settings necessary for Docker in the cluster
 	// +optional
-	Docker *DockerInfo `json:"docker,omitempty" protobuf:"bytes,31,opt,name=docker"`
+	Docker *DockerInfo `json:"docker,omitempty" protobuf:"bytes,40,opt,name=docker"`
 
 	// Kubelet holds settings necessary for Kubelet in the cluster
 	// +optional
-	Kubelet *Kubelet `json:"kubelet,omitempty" protobuf:"bytes,32,opt,name=kubelet"`
+	Kubelet *Kubelet `json:"kubelet,omitempty" protobuf:"bytes,41,opt,name=kubelet"`
 }
 
 // ControlPlaneComponent holds settings common to control plane component of the cluster
@@ -336,6 +340,9 @@ type ClusterStatus struct {
 	NodeCIDRMaskSizeIPv6 int32 `json:"nodeCIDRMaskSizeIPv6,omitempty" protobuf:"varint,19,opt,name=nodeCIDRMaskSizeIPv6"`
 	// +optional
 	KubeVendor KubeVendorType `json:"kubeVendor" protobuf:"bytes,20,opt,name=kubeVendor"`
+	// AppVersion is the overall version of system components
+	// +optional
+	AppVersion string `json:"appVersion,omitempty" protobuf:"bytes,21,opt,name=appVersion"`
 }
 
 // FinalizerName is the name identifying a finalizer during cluster lifecycle.

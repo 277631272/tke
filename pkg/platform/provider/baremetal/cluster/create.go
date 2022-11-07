@@ -527,7 +527,8 @@ func (p *Provider) EnsureContainerd(ctx context.Context, c *v2.Cluster) error {
 	option := &containerd.Option{
 		InsecureRegistries: insecureRegistries,
 		SandboxImage:       path.Join(prefix, images.Get().Pause.BaseName()),
-		RegistryMirror:     prefix,
+		// for mirror, we just need domain in prefix
+		RegistryMirror: strings.Split(prefix, "/")[0],
 	}
 	for _, machine := range c.Spec.Machines {
 		machineSSH, err := machine.SSH()
@@ -1705,7 +1706,8 @@ func (p *Provider) EnsureCheckAnywhereSubscription(ctx context.Context, c *v2.Cl
 	if err != nil {
 		return err
 	}
-
+	// Update appVersion after all system components deployed
+	c.Status.AppVersion = c.Spec.AppVersion
 	return nil
 }
 

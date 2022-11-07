@@ -344,6 +344,7 @@ var map_ClusterSpec = map[string]string{
 	"etcd":                 "Etcd holds configuration for etcd.",
 	"hostnameAsNodename":   "If true will use hostname as nodename, if false will use machine IP as nodename.",
 	"bootstrapApps":        "BootstrapApps will install apps during creating cluster",
+	"appVersion":           "AppVersion is the overall version of system components",
 	"networking":           "Networking holds configuration for the networking topology of the cluster.",
 	"apiserver":            "APIServer contains extra settings for the API server control plane component",
 	"controllerManager":    "ControllerManager contains extra settings for the controller manager control plane component",
@@ -357,10 +358,11 @@ func (ClusterSpec) SwaggerDoc() map[string]string {
 }
 
 var map_ClusterStatus = map[string]string{
-	"":          "ClusterStatus represents information about the status of a cluster.",
-	"message":   "A human readable message indicating details about why the cluster is in this condition.",
-	"reason":    "A brief CamelCase message indicating details about why the cluster is in this state.",
-	"addresses": "List of addresses reachable to the cluster.",
+	"":           "ClusterStatus represents information about the status of a cluster.",
+	"message":    "A human readable message indicating details about why the cluster is in this condition.",
+	"reason":     "A brief CamelCase message indicating details about why the cluster is in this state.",
+	"addresses":  "List of addresses reachable to the cluster.",
+	"appVersion": "AppVersion is the overall version of system components",
 }
 
 func (ClusterStatus) SwaggerDoc() map[string]string {

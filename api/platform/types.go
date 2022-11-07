@@ -192,6 +192,10 @@ type ClusterSpec struct {
 	// +optional
 	BootstrapApps BootstrapApps
 
+	// AppVersion is the overall version of system components
+	// +optional
+	AppVersion string
+
 	// Networking holds configuration for the networking topology of the cluster.
 	// +optional
 	Networking *Networking
@@ -326,6 +330,9 @@ type ClusterStatus struct {
 	NodeCIDRMaskSizeIPv6 int32
 	// +optional
 	KubeVendor KubeVendorType
+	// AppVersion is the overall version of system components
+	// +optional
+	AppVersion string
 }
 
 // FinalizerName is the name identifying a finalizer during cluster lifecycle.

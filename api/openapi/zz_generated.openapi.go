@@ -41609,16 +41609,18 @@ func schema_tke_api_application_v1_Chart(ref common.ReferenceCallback) common.Op
 					},
 					"chartName": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "ChartName is the name of the chart.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"chartVersion": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "ChartVersion is the version of the chart.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"repoURL": {
@@ -53300,6 +53302,13 @@ func schema_tke_api_platform_v1_ClusterSpec(ref common.ReferenceCallback) common
 							},
 						},
 					},
+					"appVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AppVersion is the overall version of system components",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"tenantID", "type", "version"},
 			},
@@ -53480,6 +53489,13 @@ func schema_tke_api_platform_v1_ClusterStatus(ref common.ReferenceCallback) comm
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
+						},
+					},
+					"appVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AppVersion is the overall version of system components",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

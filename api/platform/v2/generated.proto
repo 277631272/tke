@@ -625,29 +625,33 @@ message ClusterSpec {
   // +optional
   repeated BootstrapApp bootstrapApps = 26;
 
+  // AppVersion is the overall version of system components
+  // +optional
+  optional string appVersion = 27;
+
   // Networking holds configuration for the networking topology of the cluster.
   // +optional
-  optional Networking networking = 27;
+  optional Networking networking = 36;
 
   // APIServer contains extra settings for the API server control plane component
   // +optional
-  optional APIServer apiserver = 28;
+  optional APIServer apiserver = 37;
 
   // ControllerManager contains extra settings for the controller manager control plane component
   // +optional
-  optional ControllerManager controllerManager = 29;
+  optional ControllerManager controllerManager = 38;
 
   // Scheduler contains extra settings for the scheduler control plane component
   // +optional
-  optional Scheduler scheduler = 30;
+  optional Scheduler scheduler = 39;
 
   // DockerInfo holds settings necessary for Docker in the cluster
   // +optional
-  optional DockerInfo docker = 31;
+  optional DockerInfo docker = 40;
 
   // Kubelet holds settings necessary for Kubelet in the cluster
   // +optional
-  optional Kubelet kubelet = 32;
+  optional Kubelet kubelet = 41;
 }
 
 // ClusterStatus represents information about the status of a cluster.
@@ -717,6 +721,10 @@ message ClusterStatus {
 
   // +optional
   optional string kubeVendor = 20;
+
+  // AppVersion is the overall version of system components
+  // +optional
+  optional string appVersion = 21;
 }
 
 // ConfigMap holds configuration data for tke to consume.
