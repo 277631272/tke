@@ -32,9 +32,12 @@ func Convert_v1_ClusterSpec_To_platform_ClusterSpec(in *ClusterSpec, out *platfo
 		NetworkType:   platform.NetworkType(in.NetworkType),
 		NetworkDevice: in.NetworkDevice,
 		ClusterCIDR:   in.ClusterCIDR,
-		ServiceCIDR:   *in.ServiceCIDR,
-		DNSDomain:     in.DNSDomain,
-		NetworkArgs:   *(*map[string]string)(unsafe.Pointer(&in.NetworkArgs)),
+		//ServiceCIDR:   *in.ServiceCIDR,
+		DNSDomain:   in.DNSDomain,
+		NetworkArgs: *(*map[string]string)(unsafe.Pointer(&in.NetworkArgs)),
+	}
+	if in.ServiceCIDR != nil {
+		out.Networking.ServiceCIDR = *in.ServiceCIDR
 	}
 
 	out.APIServer = &platform.APIServer{
@@ -72,8 +75,10 @@ func Convert_platform_ClusterSpec_To_v1_ClusterSpec(in *platform.ClusterSpec, ou
 		out.NetworkType = NetworkType(in.Networking.NetworkType)
 		out.NetworkDevice = in.Networking.NetworkDevice
 		out.ClusterCIDR = in.Networking.ClusterCIDR
-		svcCidr := in.Networking.ServiceCIDR
-		out.ServiceCIDR = &svcCidr
+		if len(in.Networking.ServiceCIDR) != 0 {
+			svcCidr := in.Networking.ServiceCIDR
+			out.ServiceCIDR = &svcCidr
+		}
 		out.DNSDomain = in.Networking.DNSDomain
 		out.NetworkArgs = *(*map[string]string)(unsafe.Pointer(&in.Networking.NetworkArgs))
 	}
