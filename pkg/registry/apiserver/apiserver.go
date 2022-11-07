@@ -24,7 +24,7 @@ import (
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	authversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/auth/v1"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	registryv1 "tkestack.io/tke/api/registry/v1"
 	"tkestack.io/tke/pkg/apiserver/storage"
@@ -52,7 +52,7 @@ type ExtraConfig struct {
 	RegistryConfig          *registryconfig.RegistryConfiguration
 	AuthClient              authversionedclient.AuthV1Interface
 	BusinessClient          businessversionedclient.BusinessV1Interface
-	PlatformClient          platformversionedclient.PlatformV1Interface
+	PlatformClient          platformversionedclient.PlatformV2Interface
 }
 
 // Config contains the core configuration instance of apiserver and
