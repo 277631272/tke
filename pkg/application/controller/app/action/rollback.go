@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	appconfig "tkestack.io/tke/pkg/application/config"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
 	applicationprovider "tkestack.io/tke/pkg/application/provider/application"
@@ -35,7 +35,7 @@ import (
 // Rollback roll back to the previous release
 func Rollback(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc applicationprovider.UpdateStatusFunc) (*applicationv1.App, error) {

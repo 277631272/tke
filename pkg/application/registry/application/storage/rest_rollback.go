@@ -30,24 +30,25 @@ import (
 	application "tkestack.io/tke/api/application"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationinternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/application/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 )
 
 // RollbackREST adapts a service registry into apiserver's RESTStorage model.
 type RollbackREST struct {
 	store             ApplicationStorage
 	applicationClient *applicationinternalclient.ApplicationClient
-	platformClient    platformversionedclient.PlatformV1Interface
+	platformClient    platformversionedclient.PlatformV2Interface
 }
 
 // NewRollbackREST returns a wrapper around the underlying generic storage and performs
 // rollback of helm releases.
 // TODO: all transactional behavior should be supported from within generic storage
-//   or the strategy.
+//
+//	or the strategy.
 func NewRollbackREST(
 	store ApplicationStorage,
 	applicationClient *applicationinternalclient.ApplicationClient,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 ) *RollbackREST {
 	rest := &RollbackREST{
 		store:             store,
@@ -102,7 +103,7 @@ type proxyHandler struct {
 	revision          int64
 	cluster           string
 	applicationClient *applicationinternalclient.ApplicationClient
-	platformClient    platformversionedclient.PlatformV1Interface
+	platformClient    platformversionedclient.PlatformV2Interface
 }
 
 func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

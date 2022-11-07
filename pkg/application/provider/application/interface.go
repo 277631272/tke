@@ -27,8 +27,8 @@ import (
 	"k8s.io/client-go/rest"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	appconfig "tkestack.io/tke/pkg/application/config"
 )
 
@@ -41,54 +41,54 @@ type ControllerProvider interface {
 type HooksProvider interface {
 	PreInstall(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration,
 		updateStatusFunc UpdateStatusFunc) error
 	PostInstall(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration,
 		updateStatusFunc UpdateStatusFunc) error
 	PreUpgrade(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration,
 		updateStatusFunc UpdateStatusFunc) error
 	PostUpgrade(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration,
 		updateStatusFunc UpdateStatusFunc) error
 	PreRollback(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration,
 		updateStatusFunc UpdateStatusFunc) error
 	PostRollback(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration,
 		updateStatusFunc UpdateStatusFunc) error
 	PreUninstall(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration) error
 	PostUninstall(ctx context.Context,
 		applicationClient applicationversionedclient.ApplicationV1Interface,
-		platformClient platformversionedclient.PlatformV1Interface,
+		platformClient platformversionedclient.PlatformV2Interface,
 		app *applicationv1.App,
 		repo appconfig.RepoConfiguration) error
 }
 
 type RestConfigProvider interface {
-	GetRestConfig(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, app *applicationv1.App) (*rest.Config, error)
+	GetRestConfig(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, app *applicationv1.App) (*rest.Config, error)
 }
 
 // Provider defines a set of response interfaces for specific cluster
@@ -118,8 +118,8 @@ func (p *DelegateProvider) OnFilter(ctx context.Context, app *applicationv1.App)
 	return true
 }
 
-func (p *DelegateProvider) GetRestConfig(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, app *applicationv1.App) (*rest.Config, error) {
-	var credential *platformv1.ClusterCredential
+func (p *DelegateProvider) GetRestConfig(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, app *applicationv1.App) (*rest.Config, error) {
+	var credential *platformv2.ClusterCredential
 	cluster, err := platformClient.Clusters().Get(ctx, app.Spec.TargetCluster, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (p *DelegateProvider) GetRestConfig(ctx context.Context, platformClient pla
 
 func (DelegateProvider) PreInstall(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc UpdateStatusFunc) error {
@@ -149,7 +149,7 @@ func (DelegateProvider) PreInstall(ctx context.Context,
 
 func (DelegateProvider) PostInstall(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc UpdateStatusFunc) error {
@@ -158,7 +158,7 @@ func (DelegateProvider) PostInstall(ctx context.Context,
 
 func (DelegateProvider) PreUpgrade(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc UpdateStatusFunc) error {
@@ -167,7 +167,7 @@ func (DelegateProvider) PreUpgrade(ctx context.Context,
 
 func (DelegateProvider) PostUpgrade(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc UpdateStatusFunc) error {
@@ -176,7 +176,7 @@ func (DelegateProvider) PostUpgrade(ctx context.Context,
 
 func (DelegateProvider) PreRollback(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc UpdateStatusFunc) error {
@@ -185,7 +185,7 @@ func (DelegateProvider) PreRollback(ctx context.Context,
 
 func (DelegateProvider) PostRollback(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc UpdateStatusFunc) error {
@@ -194,7 +194,7 @@ func (DelegateProvider) PostRollback(ctx context.Context,
 
 func (DelegateProvider) PreUninstall(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration) error {
 	return nil
@@ -202,7 +202,7 @@ func (DelegateProvider) PreUninstall(ctx context.Context,
 
 func (DelegateProvider) PostUninstall(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration) error {
 	return nil

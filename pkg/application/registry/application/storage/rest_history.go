@@ -27,7 +27,7 @@ import (
 	"tkestack.io/tke/api/application"
 	v1 "tkestack.io/tke/api/application/v1"
 	applicationinternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/application/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
 	"tkestack.io/tke/pkg/application/util"
 )
@@ -36,17 +36,18 @@ import (
 type HistoryREST struct {
 	application       ApplicationStorage
 	applicationClient *applicationinternalclient.ApplicationClient
-	platformClient    platformversionedclient.PlatformV1Interface
+	platformClient    platformversionedclient.PlatformV2Interface
 }
 
 // NewHistoryREST returns a wrapper around the underlying generic storage and performs
 // allocations and deallocations of various helm releases related histories.
 // TODO: all transactional behavior should be supported from within generic storage
-//   or the strategy.
+//
+//	or the strategy.
 func NewHistoryREST(
 	application ApplicationStorage,
 	applicationClient *applicationinternalclient.ApplicationClient,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 ) *HistoryREST {
 	rest := &HistoryREST{
 		application:       application,

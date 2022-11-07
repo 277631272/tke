@@ -23,7 +23,7 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	applicationv1 "tkestack.io/tke/api/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/pkg/apiserver/storage"
@@ -39,7 +39,7 @@ type ExtraConfig struct {
 	StorageFactory          serverstorage.StorageFactory
 	VersionedInformers      versionedinformers.SharedInformerFactory
 	RegistryClient          registryversionedclient.RegistryV1Interface
-	PlatformClient          platformversionedclient.PlatformV1Interface
+	PlatformClient          platformversionedclient.PlatformV2Interface
 	RepoConfiguration       appconfig.RepoConfiguration
 }
 

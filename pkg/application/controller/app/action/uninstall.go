@@ -26,7 +26,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
 	"tkestack.io/tke/pkg/application/util"
 )
@@ -34,7 +34,7 @@ import (
 // Uninstall provides the implementation of 'helm uninstall'.
 func Uninstall(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration) (*release.UninstallReleaseResponse, error) {
 	hooks := getHooks(app)

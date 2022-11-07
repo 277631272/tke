@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/cmd/tke-application-controller/app/config"
 	appconfig "tkestack.io/tke/pkg/application/config"
@@ -75,7 +75,7 @@ type ControllerContext struct {
 	ControllerStartInterval time.Duration
 
 	Repo           appconfig.RepoConfiguration
-	PlatformClient platformv1.PlatformV1Interface
+	PlatformClient platformv2.PlatformV2Interface
 }
 
 // IsControllerEnabled returns whether the controller has been enabled
@@ -126,7 +126,7 @@ func CreateControllerContext(cfg *config.Config, rootClientBuilder controller.Cl
 		ControllerStartInterval: cfg.Component.ControllerStartInterval,
 
 		Repo:           cfg.RepoConfiguration,
-		PlatformClient: platformClient.PlatformV1(),
+		PlatformClient: platformClient.PlatformV2(),
 	}
 
 	return ctx, nil
