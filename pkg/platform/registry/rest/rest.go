@@ -63,8 +63,8 @@ func (s *StorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.A
 		apiGroupInfo.VersionedResourcesStorageMap[v2.SchemeGroupVersion.Version] = s.v1Storage(apiResourceConfigSource, restOptionsGetter, s.LoopbackClientConfig)
 	}
 	apiGroupInfo.PrioritizedVersions = []schema.GroupVersion{
-		schema.GroupVersion{"platform.tkestack.io", "v2"},
-		schema.GroupVersion{"platform.tkestack.io", "v1"},
+		{"platform.tkestack.io", "v2"},
+		{"platform.tkestack.io", "v1"},
 	}
 
 	return apiGroupInfo, true
