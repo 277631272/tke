@@ -199,7 +199,7 @@ func (m *APIServer) InstallAPIs(apiResourceConfigSource serverstorage.APIResourc
 			log.Warnf("Problem initializing API group %q, skipping.", groupName)
 			continue
 		}
-		log.Infof("Enabling API group %q.", groupName)
+		log.Infof("Enabling API group %q, PrioritizedVersions: %v", groupName, apiGroupInfo.PrioritizedVersions)
 
 		if postHookProvider, ok := restStorageBuilder.(genericapiserver.PostStartHookProvider); ok {
 			name, hook, err := postHookProvider.PostStartHook()
