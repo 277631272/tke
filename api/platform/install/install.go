@@ -35,5 +35,5 @@ func Install(scheme *runtime.Scheme) {
 	runtimeutil.Must(platform.AddToScheme(scheme))
 	runtimeutil.Must(v1.AddToScheme(scheme))
 	runtimeutil.Must(v2.AddToScheme(scheme))
-	runtimeutil.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion))
+	runtimeutil.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion, v2.SchemeGroupVersion))
 }
