@@ -19,6 +19,7 @@
 package rest
 
 import (
+	"fmt"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/registry/generic"
@@ -62,10 +63,12 @@ func (s *StorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.A
 	if apiResourceConfigSource.VersionEnabled(v2.SchemeGroupVersion) {
 		apiGroupInfo.VersionedResourcesStorageMap[v2.SchemeGroupVersion.Version] = s.v1Storage(apiResourceConfigSource, restOptionsGetter, s.LoopbackClientConfig)
 	}
+	fmt.Println("1 tkestack registry rest, apiGroupInfo.PrioritizedVersions: ", apiGroupInfo.PrioritizedVersions)
 	apiGroupInfo.PrioritizedVersions = []schema.GroupVersion{
 		{"platform.tkestack.io", "v2"},
 		{"platform.tkestack.io", "v1"},
 	}
+	fmt.Println("2 tkestack registry rest, apiGroupInfo.PrioritizedVersions: ", apiGroupInfo.PrioritizedVersions)
 
 	return apiGroupInfo, true
 }
