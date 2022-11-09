@@ -19,6 +19,7 @@
 package install
 
 import (
+	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"tkestack.io/tke/api/platform"
@@ -27,11 +28,13 @@ import (
 )
 
 func init() {
+	fmt.Println("init, tkestack register platform scheme")
 	Install(platform.Scheme)
 }
 
 // Install registers the API group and adds types to a scheme
 func Install(scheme *runtime.Scheme) {
+	fmt.Println("install, tkestack register platform scheme")
 	runtimeutil.Must(platform.AddToScheme(scheme))
 	runtimeutil.Must(v1.AddToScheme(scheme))
 	runtimeutil.Must(v2.AddToScheme(scheme))
