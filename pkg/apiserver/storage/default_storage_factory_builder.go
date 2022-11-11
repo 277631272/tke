@@ -29,7 +29,6 @@ import (
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	"strings"
-	"tkestack.io/tke/api/platform"
 	storageoptions "tkestack.io/tke/pkg/apiserver/storage/options"
 )
 
@@ -37,9 +36,10 @@ import (
 var SpecialDefaultResourcePrefixes = map[schema.GroupResource]string{}
 
 // NewFactoryConfig creates the default FactoryConfig object.
-func NewFactoryConfig(codecs runtime.StorageSerializer, scheme *runtime.Scheme) *FactoryConfig {
-	resources := []schema.GroupVersionResource{
-		platform.Resource("Cluster").WithVersion("v2"),
+func NewFactoryConfig(codecs runtime.StorageSerializer, scheme *runtime.Scheme, resourceList ...schema.GroupVersionResource) *FactoryConfig {
+	var resources []schema.GroupVersionResource
+	for _, resource := range resourceList {
+		resources = append(resources, resource)
 	}
 	return &FactoryConfig{
 		Serializer:                codecs,
