@@ -32,9 +32,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	platforminternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	"tkestack.io/tke/pkg/platform/util/credential"
@@ -52,8 +52,8 @@ func DynamicClientByCluster(ctx context.Context, cluster *platform.Cluster, plat
 		return nil, err
 	}
 
-	clusterv1 := &platformv1.Cluster{}
-	err = platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, clusterv1, nil)
+	clusterv1 := &platformv2.Cluster{}
+	err = platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, clusterv1, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +85,8 @@ func ClientSetByCluster(ctx context.Context, cluster *platform.Cluster, platform
 		return nil, err
 	}
 
-	clusterv1 := &platformv1.Cluster{}
-	err = platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, clusterv1, nil)
+	clusterv1 := &platformv2.Cluster{}
+	err = platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, clusterv1, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -124,15 +124,15 @@ func ResourceFromKind(kind string) string {
 
 // BuildVersionedClientSet creates the clientset of kubernetes by given
 // cluster object and returns it.
-func BuildVersionedClientSet(cluster *platformv1.Cluster, cc *platformv1.ClusterCredential) (*kubernetes.Clientset, error) {
+func BuildVersionedClientSet(cluster *platformv2.Cluster, cc *platformv2.ClusterCredential) (*kubernetes.Clientset, error) {
 	restConfig := cc.RESTConfig(cluster)
 	return kubernetes.NewForConfig(restConfig)
 }
 
 // BuildExternalClientSet creates the clientset of kubernetes by given cluster
 // object and returns it.
-func BuildExternalClientSet(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (*kubernetes.Clientset, error) {
-	cc, err := credential.GetClusterCredentialV1(ctx, client, cluster, clusterprovider.AdminUsername)
+func BuildExternalClientSet(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (*kubernetes.Clientset, error) {
+	cc, err := credential.GetClusterCredentialV2(ctx, client, cluster, clusterprovider.AdminUsername)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func BuildExternalClientSet(ctx context.Context, cluster *platformv1.Cluster, cl
 
 // BuildExternalClientSetWithName creates the clientset of kubernetes by given cluster
 // name and returns it.
-func BuildExternalClientSetWithName(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, name string) (*kubernetes.Clientset, error) {
+func BuildExternalClientSetWithName(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, name string) (*kubernetes.Clientset, error) {
 	cluster, err := platformClient.Clusters().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -158,20 +158,20 @@ func BuildExternalClientSetWithName(ctx context.Context, platformClient platform
 	return clientset, nil
 }
 
-func clusterAddress(cluster *platformv1.Cluster) (*platformv1.ClusterAddress, error) {
-	addrs := make(map[platformv1.AddressType][]platformv1.ClusterAddress)
+func clusterAddress(cluster *platformv2.Cluster) (*platformv2.ClusterAddress, error) {
+	addrs := make(map[platformv2.AddressType][]platformv2.ClusterAddress)
 	for _, one := range cluster.Status.Addresses {
 		addrs[one.Type] = append(addrs[one.Type], one)
 	}
 
-	var address *platformv1.ClusterAddress
-	if len(addrs[platformv1.AddressInternal]) != 0 {
-		address = &addrs[platformv1.AddressInternal][rand.Intn(len(addrs[platformv1.AddressInternal]))]
-	} else if len(addrs[platformv1.AddressAdvertise]) != 0 {
-		address = &addrs[platformv1.AddressAdvertise][rand.Intn(len(addrs[platformv1.AddressAdvertise]))]
+	var address *platformv2.ClusterAddress
+	if len(addrs[platformv2.AddressInternal]) != 0 {
+		address = &addrs[platformv2.AddressInternal][rand.Intn(len(addrs[platformv2.AddressInternal]))]
+	} else if len(addrs[platformv2.AddressAdvertise]) != 0 {
+		address = &addrs[platformv2.AddressAdvertise][rand.Intn(len(addrs[platformv2.AddressAdvertise]))]
 	} else {
-		if len(addrs[platformv1.AddressReal]) != 0 {
-			address = &addrs[platformv1.AddressReal][rand.Intn(len(addrs[platformv1.AddressReal]))]
+		if len(addrs[platformv2.AddressReal]) != 0 {
+			address = &addrs[platformv2.AddressReal][rand.Intn(len(addrs[platformv2.AddressReal]))]
 		}
 	}
 	if address == nil {

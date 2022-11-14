@@ -36,9 +36,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	netutils "k8s.io/utils/net"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	csioperatorimage "tkestack.io/tke/pkg/platform/provider/baremetal/phases/csioperator/images"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/gpu"
 	"tkestack.io/tke/pkg/platform/types"
@@ -78,23 +78,23 @@ var (
 )
 
 // ValidateCluster validates a given Cluster.
-func ValidateCluster(platformClient platformv1client.PlatformV1Interface, obj *types.Cluster) field.ErrorList {
+func ValidateCluster(platformClient platformv2client.PlatformV2Interface, obj *types.Cluster) field.ErrorList {
 	allErrs := ValidatClusterSpec(platformClient, obj.Name, obj.Cluster, field.NewPath("spec"), obj.Status.Phase, true)
 	return allErrs
 }
 
 // ValidateCluster validates a given Cluster.
-func ValidateClusterUpdate(platformClient platformv1client.PlatformV1Interface, cluster *types.Cluster, oldCluster *types.Cluster) field.ErrorList {
+func ValidateClusterUpdate(platformClient platformv2client.PlatformV2Interface, cluster *types.Cluster, oldCluster *types.Cluster) field.ErrorList {
 	fldPath := field.NewPath("spec")
 	allErrs := ValidatClusterSpec(platformClient, cluster.Name, cluster.Cluster, fldPath, cluster.Status.Phase, false)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.NetworkDevice, oldCluster.Spec.NetworkDevice, fldPath.Child("networkDevice"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.ClusterCIDR, oldCluster.Spec.ClusterCIDR, fldPath.Child("clusterCIDR"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.DNSDomain, oldCluster.Spec.DNSDomain, fldPath.Child("dnsDomain"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.DockerExtraArgs, oldCluster.Spec.DockerExtraArgs, fldPath.Child("dockerExtraArgs"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.KubeletExtraArgs, oldCluster.Spec.KubeletExtraArgs, fldPath.Child("kubeletExtraArgs"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.APIServerExtraArgs, oldCluster.Spec.APIServerExtraArgs, fldPath.Child("apiServerExtraArgs"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.ControllerManagerExtraArgs, oldCluster.Spec.ControllerManagerExtraArgs, fldPath.Child("controllerManagerExtraArgs"))...)
-	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.SchedulerExtraArgs, oldCluster.Spec.SchedulerExtraArgs, fldPath.Child("schedulerExtraArgs"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.Networking.NetworkDevice, oldCluster.Spec.Networking.NetworkDevice, fldPath.Child("networkDevice"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.Networking.ClusterCIDR, oldCluster.Spec.Networking.ClusterCIDR, fldPath.Child("clusterCIDR"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.Networking.DNSDomain, oldCluster.Spec.Networking.DNSDomain, fldPath.Child("dnsDomain"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.Docker.ExtraArgs, oldCluster.Spec.Docker.ExtraArgs, fldPath.Child("dockerExtraArgs"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.Kubelet.ExtraArgs, oldCluster.Spec.Kubelet.ExtraArgs, fldPath.Child("kubeletExtraArgs"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.APIServer.ExtraArgs, oldCluster.Spec.APIServer.ExtraArgs, fldPath.Child("apiServerExtraArgs"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.ControllerManager.ExtraArgs, oldCluster.Spec.ControllerManager.ExtraArgs, fldPath.Child("controllerManagerExtraArgs"))...)
+	allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(cluster.Spec.Scheduler.ExtraArgs, oldCluster.Spec.Scheduler.ExtraArgs, fldPath.Child("schedulerExtraArgs"))...)
 	allErrs = append(allErrs, ValidateClusterScale(cluster.Cluster, oldCluster.Cluster, fldPath.Child("machines"))...)
 
 	return allErrs
@@ -124,7 +124,7 @@ func ValidateClusterScale(cluster *platform.Cluster, oldCluster *platform.Cluste
 }
 
 // ValidatClusterSpec validates a given ClusterSpec.
-func ValidatClusterSpec(platformClient platformv1client.PlatformV1Interface, clusterName string, cls *platform.Cluster, fldPath *field.Path, phase platform.ClusterPhase, validateMachine bool) field.ErrorList {
+func ValidatClusterSpec(platformClient platformv2client.PlatformV2Interface, clusterName string, cls *platform.Cluster, fldPath *field.Path, phase platform.ClusterPhase, validateMachine bool) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	allErrs = append(allErrs, ValidateClusterSpecVersion(platformClient, clusterName, cls.Spec.Version, fldPath.Child("version"), phase)...)
@@ -141,7 +141,7 @@ func ValidatClusterSpec(platformClient platformv1client.PlatformV1Interface, clu
 }
 
 // ValidateClusterSpecVersion validates a given version.
-func ValidateClusterSpecVersion(platformClient platformv1client.PlatformV1Interface, clsName, version string, fldPath *field.Path, phase platform.ClusterPhase) field.ErrorList {
+func ValidateClusterSpecVersion(platformClient platformv2client.PlatformV2Interface, clsName, version string, fldPath *field.Path, phase platform.ClusterPhase) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	k8sValidVersions, err := getK8sValidVersions(platformClient, clsName)
@@ -240,7 +240,7 @@ func ValidateClusterMachines(cls *platform.Cluster, fldPath *field.Path) field.E
 		mcReErrs = ValidateMachineResource(fldPath, masters)
 		mcReResult.Checked = true
 
-		routeErrs = ValidateDefaultRoute(fldPath, masters, cls.Spec.NetworkDevice)
+		routeErrs = ValidateDefaultRoute(fldPath, masters, cls.Spec.Networking.NetworkDevice)
 		routeResult.Checked = true
 
 		portsErrs = ValidateReservePorts(fldPath, masters)
@@ -386,11 +386,11 @@ func ValidateStorage(cls *platform.Cluster, fld *field.Path) field.ErrorList {
 func ValidateNFS(cls *platform.Cluster, fld *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if cls.Annotations[platformv1.AnywhereLocalizationsAnno] == "" {
+	if cls.Annotations[platformv2.AnywhereLocalizationsAnno] == "" {
 		return nil
 	}
 
-	localizationsJSON, err := base64.StdEncoding.DecodeString(cls.Annotations[platformv1.AnywhereLocalizationsAnno])
+	localizationsJSON, err := base64.StdEncoding.DecodeString(cls.Annotations[platformv2.AnywhereLocalizationsAnno])
 	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fld, err, "decode error"))
 		return allErrs
@@ -422,11 +422,11 @@ func ValidateNFS(cls *platform.Cluster, fld *field.Path) field.ErrorList {
 func ValidateCephFS(cls *platform.Cluster, fld *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if cls.Annotations[platformv1.AnywhereLocalizationsAnno] == "" {
+	if cls.Annotations[platformv2.AnywhereLocalizationsAnno] == "" {
 		return nil
 	}
 
-	localizationsJSON, err := base64.StdEncoding.DecodeString(cls.Annotations[platformv1.AnywhereLocalizationsAnno])
+	localizationsJSON, err := base64.StdEncoding.DecodeString(cls.Annotations[platformv2.AnywhereLocalizationsAnno])
 	if err != nil {
 		allErrs = append(allErrs, field.Invalid(fld, err, "decode error"))
 		return allErrs
@@ -627,7 +627,7 @@ func ValidateMasterTimeOffset(fldPath *field.Path, masters []*ssh.SSH) field.Err
 	return allErrs
 }
 
-func getK8sValidVersions(platformClient platformv1client.PlatformV1Interface, clsName string) (validVersions []string, err error) {
+func getK8sValidVersions(platformClient platformv2client.PlatformV2Interface, clsName string) (validVersions []string, err error) {
 	if clsName == "global" || platformClient == nil {
 		return spec.K8sVersions, nil
 	}
@@ -652,15 +652,15 @@ func getK8sValidVersions(platformClient platformv1client.PlatformV1Interface, cl
 	return k8sValidVersions, err
 }
 
-func validateKubevendor(srcKubevendor, dstKubevendor platformv1.KubeVendorType) (err error) {
+func validateKubevendor(srcKubevendor, dstKubevendor platformv2.KubeVendorType) (err error) {
 	notSupportUpgradeMessage := "not support upgrade from vendor %v to vendor %v"
 	switch srcKubevendor {
-	case platformv1.KubeVendorTKE:
-		if dstKubevendor != platformv1.KubeVendorTKE {
+	case platformv2.KubeVendorTKE:
+		if dstKubevendor != platformv2.KubeVendorTKE {
 			return fmt.Errorf(notSupportUpgradeMessage, srcKubevendor, dstKubevendor)
 		}
-	case platformv1.KubeVendorOther:
-		if dstKubevendor != platformv1.KubeVendorOther && dstKubevendor != platformv1.KubeVendorTKE {
+	case platformv2.KubeVendorOther:
+		if dstKubevendor != platformv2.KubeVendorOther && dstKubevendor != platformv2.KubeVendorTKE {
 			return fmt.Errorf(notSupportUpgradeMessage, srcKubevendor, dstKubevendor)
 		}
 	default:
@@ -713,7 +713,7 @@ func ValidateCIDRs(cls *platform.Cluster, specPath *field.Path) field.ErrorList 
 	}
 
 	fldPath := specPath.Child("clusterCIDR")
-	cidr := cls.Spec.ClusterCIDR
+	cidr := cls.Spec.Networking.ClusterCIDR
 	if len(cidr) == 0 {
 		allErrs = append(allErrs, field.Invalid(fldPath, cidr, "ClusterCIDR is empty string"))
 	} else {
@@ -721,8 +721,8 @@ func ValidateCIDRs(cls *platform.Cluster, specPath *field.Path) field.ErrorList 
 	}
 
 	fldPath = specPath.Child("serviceCIDR")
-	if cls.Spec.ServiceCIDR != nil {
-		cidr = *cls.Spec.ServiceCIDR
+	if cls.Spec.Networking.ServiceCIDR != "" {
+		cidr = cls.Spec.Networking.ServiceCIDR
 		if len(cidr) == 0 {
 			allErrs = append(allErrs, field.Invalid(fldPath, cidr, "ServiceCIDR is empty string"))
 		} else {
@@ -765,11 +765,11 @@ func ValidateClusterProperty(spec *platform.ClusterSpec, propPath *field.Path) f
 
 	fldPath = propPath.Child("maxClusterServiceNum")
 	if properties.MaxClusterServiceNum == nil {
-		if spec.ServiceCIDR == nil { // not set serviceCIDR, need set maxClusterServiceNum
+		if spec.Networking.ServiceCIDR == "" { // not set serviceCIDR, need set maxClusterServiceNum
 			allErrs = append(allErrs, field.Required(fldPath, fmt.Sprintf("validate values are %v", clusterServiceNumAvails)))
 		}
 	} else {
-		if spec.ServiceCIDR != nil { // spec.serviceCIDR and properties.maxClusterServiceNum can't be used together
+		if spec.Networking.ServiceCIDR != "" { // spec.serviceCIDR and properties.maxClusterServiceNum can't be used together
 			allErrs = append(allErrs, field.Forbidden(fldPath, "can't be used together with spec.serviceCIDR"))
 		} else {
 			allErrs = utilvalidation.ValidateEnum(*properties.MaxClusterServiceNum, fldPath, clusterServiceNumAvails)
@@ -825,7 +825,7 @@ func ValidateCSIOperator(csioperator *platform.CSIOperatorFeature, fldPath *fiel
 func ValidateIPVS(spec *platform.ClusterSpec, ipvs *bool, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	if *ipvs {
-		if spec.ServiceCIDR == nil {
+		if spec.Networking.ServiceCIDR == "" {
 			allErrs = append(allErrs, field.Invalid(fldPath, ipvs, "ClusterCIDR is not allowed empty string when enable ipvs"))
 		}
 	}

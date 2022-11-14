@@ -36,8 +36,11 @@ import (
 var SpecialDefaultResourcePrefixes = map[schema.GroupResource]string{}
 
 // NewFactoryConfig creates the default FactoryConfig object.
-func NewFactoryConfig(codecs runtime.StorageSerializer, scheme *runtime.Scheme) *FactoryConfig {
+func NewFactoryConfig(codecs runtime.StorageSerializer, scheme *runtime.Scheme, resourceList ...schema.GroupVersionResource) *FactoryConfig {
 	var resources []schema.GroupVersionResource
+	for _, resource := range resourceList {
+		resources = append(resources, resource)
+	}
 	return &FactoryConfig{
 		Serializer:                codecs,
 		DefaultResourceEncoding:   serverstorage.NewDefaultResourceEncodingConfig(scheme),

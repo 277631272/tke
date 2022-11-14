@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	monitorv1 "tkestack.io/tke/api/monitor/v1"
 	"tkestack.io/tke/pkg/apiserver/storage"
@@ -45,7 +45,7 @@ type ExtraConfig struct {
 	APIResourceConfigSource serverstorage.APIResourceConfigSource
 	StorageFactory          serverstorage.StorageFactory
 	VersionedInformers      versionedinformers.SharedInformerFactory
-	PlatformClient          platformversionedclient.PlatformV1Interface
+	PlatformClient          platformversionedclient.PlatformV2Interface
 	BusinessClient          businessversionedclient.BusinessV1Interface
 	PrivilegedUsername      string
 	MonitorConfig           *monitorconfig.MonitorConfiguration

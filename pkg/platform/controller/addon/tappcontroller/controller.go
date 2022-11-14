@@ -45,6 +45,7 @@ import (
 	platformv1informer "tkestack.io/tke/api/client/informers/externalversions/platform/v1"
 	platformv1lister "tkestack.io/tke/api/client/listers/platform/v1"
 	v1 "tkestack.io/tke/api/platform/v1"
+	v2 "tkestack.io/tke/api/platform/v2"
 	controllerutil "tkestack.io/tke/pkg/controller"
 	"tkestack.io/tke/pkg/platform/util"
 	"tkestack.io/tke/pkg/util/log"
@@ -380,11 +381,11 @@ func needUpgrade(tappController *v1.TappController) bool {
 }
 
 func (c *Controller) installTappController(ctx context.Context, tappController *v1.TappController) error {
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -512,19 +513,19 @@ func serviceTappController() *corev1.Service {
 func int32Ptr(i int32) *int32 { return &i }
 
 func (c *Controller) uninstallTappController(ctx context.Context, tappController *v1.TappController) error {
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil && errors.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	if cluster.Status.Phase == v1.ClusterTerminating {
+	if cluster.Status.Phase == v2.ClusterTerminating {
 		log.Info(fmt.Sprintf("Keep the components of TappController %s when deleting the cluster", tappController.Name))
 		return nil
 	}
 
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -554,7 +555,7 @@ func (c *Controller) watchTappControllerHealth(ctx context.Context, key string) 
 			return false, err
 		}
 
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -565,7 +566,7 @@ func (c *Controller) watchTappControllerHealth(ctx context.Context, key string) 
 			log.Info("Health check over.")
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -586,7 +587,7 @@ func (c *Controller) watchTappControllerHealth(ctx context.Context, key string) 
 func (c *Controller) checkTappControllerStatus(ctx context.Context, tappController *v1.TappController, key string, initDelay time.Time) func() (bool, error) {
 	return func() (bool, error) {
 		log.Info("Start to check tapp controller health", log.String("tappControllerName", tappController.Name))
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -597,7 +598,7 @@ func (c *Controller) checkTappControllerStatus(ctx context.Context, tappControll
 			log.Debug("Checking over tapp controller addon status")
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -631,7 +632,7 @@ func (c *Controller) checkTappControllerStatus(ctx context.Context, tappControll
 func (c *Controller) upgradeTappController(ctx context.Context, tappController *v1.TappController, key string, initDelay time.Time) func() (bool, error) {
 	return func() (bool, error) {
 		log.Info("Start to upgrade tapp controller", log.String("tappControllerName", tappController.Name))
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, tappController.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -642,7 +643,7 @@ func (c *Controller) upgradeTappController(ctx context.Context, tappController *
 			log.Debug("Upgrading tapp controller", log.String("tappControllerName", tappController.Name))
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}

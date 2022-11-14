@@ -27,12 +27,12 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 	applicationv1 "tkestack.io/tke/api/application/v1"
-	v1 "tkestack.io/tke/api/platform/v1"
+	v2 "tkestack.io/tke/api/platform/v2"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
 )
 
 type CreateClusterPara struct {
-	Cluster v1.Cluster `json:"cluster"`
+	Cluster v2.Cluster `json:"cluster"`
 	Config  Config     `json:"Config"`
 }
 

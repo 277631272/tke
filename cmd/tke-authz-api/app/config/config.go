@@ -32,7 +32,7 @@ import (
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/client-go/rest"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	generatedopenapi "tkestack.io/tke/api/openapi"
 	"tkestack.io/tke/cmd/tke-authz-api/app/options"
@@ -57,7 +57,7 @@ type Config struct {
 	GenericAPIServerConfig         *genericapiserver.Config
 	VersionedSharedInformerFactory versionedinformers.SharedInformerFactory
 	StorageFactory                 *serverstorage.DefaultStorageFactory
-	PlatformClient                 platformversionedclient.PlatformV1Interface
+	PlatformClient                 platformversionedclient.PlatformV2Interface
 	DefaultPolicies                []*authzv1.Policy
 	DefaultRoles                   []*authzv1.Role
 }
@@ -159,7 +159,7 @@ func CreateConfigFromOptions(serverName string, opts *options.Options) (*Config,
 		GenericAPIServerConfig:         genericAPIServerConfig,
 		VersionedSharedInformerFactory: versionedInformers,
 		StorageFactory:                 storageFactory,
-		PlatformClient:                 platformClient.PlatformV1(),
+		PlatformClient:                 platformClient.PlatformV2(),
 		DefaultPolicies:                policies,
 		DefaultRoles:                   roles,
 	}

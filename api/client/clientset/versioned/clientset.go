@@ -35,6 +35,7 @@ import (
 	monitorv1 "tkestack.io/tke/api/client/clientset/versioned/typed/monitor/v1"
 	notifyv1 "tkestack.io/tke/api/client/clientset/versioned/typed/notify/v1"
 	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryv1 "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 )
 
@@ -49,6 +50,7 @@ type Interface interface {
 	MonitorV1() monitorv1.MonitorV1Interface
 	NotifyV1() notifyv1.NotifyV1Interface
 	PlatformV1() platformv1.PlatformV1Interface
+	PlatformV2() platformv2.PlatformV2Interface
 	RegistryV1() registryv1.RegistryV1Interface
 }
 
@@ -65,6 +67,7 @@ type Clientset struct {
 	monitorV1     *monitorv1.MonitorV1Client
 	notifyV1      *notifyv1.NotifyV1Client
 	platformV1    *platformv1.PlatformV1Client
+	platformV2    *platformv2.PlatformV2Client
 	registryV1    *registryv1.RegistryV1Client
 }
 
@@ -111,6 +114,11 @@ func (c *Clientset) NotifyV1() notifyv1.NotifyV1Interface {
 // PlatformV1 retrieves the PlatformV1Client
 func (c *Clientset) PlatformV1() platformv1.PlatformV1Interface {
 	return c.platformV1
+}
+
+// PlatformV2 retrieves the PlatformV2Client
+func (c *Clientset) PlatformV2() platformv2.PlatformV2Interface {
+	return c.platformV2
 }
 
 // RegistryV1 retrieves the RegistryV1Client
@@ -175,6 +183,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.platformV2, err = platformv2.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.registryV1, err = registryv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -200,6 +212,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.monitorV1 = monitorv1.NewForConfigOrDie(c)
 	cs.notifyV1 = notifyv1.NewForConfigOrDie(c)
 	cs.platformV1 = platformv1.NewForConfigOrDie(c)
+	cs.platformV2 = platformv2.NewForConfigOrDie(c)
 	cs.registryV1 = registryv1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -218,6 +231,7 @@ func New(c rest.Interface) *Clientset {
 	cs.monitorV1 = monitorv1.New(c)
 	cs.notifyV1 = notifyv1.New(c)
 	cs.platformV1 = platformv1.New(c)
+	cs.platformV2 = platformv2.New(c)
 	cs.registryV1 = registryv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

@@ -53,11 +53,11 @@ import (
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	monitorv1informer "tkestack.io/tke/api/client/informers/externalversions/monitor/v1"
 	monitorv1lister "tkestack.io/tke/api/client/listers/monitor/v1"
 	v1 "tkestack.io/tke/api/monitor/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	notifyapi "tkestack.io/tke/cmd/tke-notify-api/app"
 	controllerutil "tkestack.io/tke/pkg/controller"
 	"tkestack.io/tke/pkg/monitor/controller/prometheus/images"
@@ -172,7 +172,7 @@ type remoteClient struct {
 // Controller is responsible for performing actions dependent upon a prometheus phase.
 type Controller struct {
 	client         clientset.Interface
-	platformClient platformv1client.PlatformV1Interface
+	platformClient platformv1client.PlatformV2Interface
 	cache          *prometheusCache
 	health         sync.Map
 	checking       sync.Map
@@ -189,7 +189,7 @@ type Controller struct {
 }
 
 // NewController creates a new Controller object.
-func NewController(client clientset.Interface, platformClient platformv1client.PlatformV1Interface, prometheusInformer monitorv1informer.PrometheusInformer, resyncPeriod time.Duration, remoteAddress []string, remoteType string) *Controller {
+func NewController(client clientset.Interface, platformClient platformv1client.PlatformV2Interface, prometheusInformer monitorv1informer.PrometheusInformer, resyncPeriod time.Duration, remoteAddress []string, remoteType string) *Controller {
 	// create the controller so we can inject the enqueue function
 	controller := &Controller{
 		client:         client,
@@ -1228,7 +1228,7 @@ func clusterRoleBindingPrometheus() *rbacv1.ClusterRoleBinding {
 	}
 }
 
-func createPrometheusCRD(components images.Components, prometheus *v1.Prometheus, cluster *platformv1.Cluster, remoteWrites, remoteReads []string, remoteType string) *monitoringv1.Prometheus {
+func createPrometheusCRD(components images.Components, prometheus *v1.Prometheus, cluster *platformv2.Cluster, remoteWrites, remoteReads []string, remoteType string) *monitoringv1.Prometheus {
 	var remoteReadSpecs []monitoringv1.RemoteReadSpec
 	for _, r := range remoteReads {
 		if r == "nil" {
@@ -1439,7 +1439,7 @@ func createSecretForPrometheus() *corev1.Secret {
 	}
 }
 
-func secretETCDPrometheus(cred *platformv1.ClusterCredential) *corev1.Secret {
+func secretETCDPrometheus(cred *platformv2.ClusterCredential) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      prometheusETCDSecret,

@@ -32,7 +32,7 @@ import (
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/logagent"
 	"tkestack.io/tke/pkg/logagent/util"
 
@@ -45,7 +45,7 @@ import (
 type LogagentProxyREST struct {
 	//rest.Storage
 	store          *registry.Store
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 // ConnectMethods returns the list of HTTP methods that can be proxied
@@ -81,7 +81,6 @@ func (r *LogagentProxyREST) Connect(ctx context.Context, clusterName string, opt
 	}, nil
 }
 
-//
 // New creates a new LogCollector proxy options object
 func (r *LogagentProxyREST) New() runtime.Object {
 	return &logagent.LogAgentProxyOptions{}

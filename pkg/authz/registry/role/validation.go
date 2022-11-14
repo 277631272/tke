@@ -28,13 +28,13 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/client-go/tools/cache"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 )
 
 var ValidateRoleName = apimachineryvalidation.NameIsDNSLabel
 
-func ValidateRole(role *authz.Role, policyGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) field.ErrorList {
+func ValidateRole(role *authz.Role, policyGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) field.ErrorList {
 	allErrs := apimachineryvalidation.ValidateObjectMeta(&role.ObjectMeta, true, ValidateRoleName, field.NewPath("metadata"))
 	if role.Scope != authz.MultiClusterScope {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("scope"), &role.ObjectMeta, "only support multicluster scope"))
@@ -61,7 +61,7 @@ func ValidateRole(role *authz.Role, policyGetter rest.Getter, platformClient pla
 
 // ValidateRoleUpdate tests if required fields in the namespace set are
 // set during an update.
-func ValidateRoleUpdate(ctx context.Context, role *authz.Role, old *authz.Role, policyGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) field.ErrorList {
+func ValidateRoleUpdate(ctx context.Context, role *authz.Role, old *authz.Role, policyGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) field.ErrorList {
 	_, tenantID := authentication.UsernameAndTenantID(ctx)
 	if tenantID == "" {
 		tenantID = "default"

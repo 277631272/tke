@@ -45,6 +45,7 @@ input_dirs=(
   ${api_machinery}
   ${api}
   "${API_PACKAGE}"/platform/v1
+  "${API_PACKAGE}"/platform/v2
   "${API_PACKAGE}"/business/v1
   "${API_PACKAGE}"/notify/v1
   "${API_PACKAGE}"/registry/v1

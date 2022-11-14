@@ -36,7 +36,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
 	platforminternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 
 	"tkestack.io/tke/api/platform"
 	"tkestack.io/tke/pkg/platform/util"
@@ -71,8 +71,8 @@ func (r *CSIREST) Connect(ctx context.Context, clusterName string, opts runtime.
 	}
 	proxyOpts := opts.(*platform.CSIProxyOptions)
 
-	clusterv1 := &platformv1.Cluster{}
-	err = platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, clusterv1, nil)
+	clusterv1 := &platformv2.Cluster{}
+	err = platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, clusterv1, nil)
 	if err != nil {
 		return nil, err
 	}

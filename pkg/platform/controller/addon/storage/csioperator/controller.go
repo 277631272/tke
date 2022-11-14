@@ -419,11 +419,11 @@ func (c *Controller) needUpgrade(ctx context.Context, csiOperator *v1.CSIOperato
 }
 
 func (c *Controller) installCSIOperator(ctx context.Context, csiOperator *v1.CSIOperator) (string, error) {
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return "", err
 	}
@@ -642,14 +642,14 @@ func (c *Controller) uninstallCSIOperator(ctx context.Context, csiOperator *v1.C
 		log.String("name", csiOperator.Name),
 		log.String("clusterName", csiOperator.Spec.ClusterName))
 
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil && k8serrors.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -704,7 +704,7 @@ func (c *Controller) watchCSIOperatorHealth(ctx context.Context, key string) fun
 		}
 		log.Info("Start check health of CSIOperator", log.String("name", csiOperator.Name))
 
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
 			return false, err
 		}
@@ -717,7 +717,7 @@ func (c *Controller) watchCSIOperatorHealth(ctx context.Context, key string) fun
 			return true, nil
 		}
 
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -745,7 +745,7 @@ func (c *Controller) checkCSIOperatorStatus(
 	return func() (bool, error) {
 		log.Info("Start to check CSIOperator health", log.String("name", csiOperator.Name))
 
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
 			return false, err
 		}
@@ -758,7 +758,7 @@ func (c *Controller) checkCSIOperatorStatus(
 			return true, nil
 		}
 
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -800,7 +800,7 @@ func (c *Controller) upgradeCSIOperator(
 	key string, initDelay time.Time) func() (bool, error) {
 	return func() (bool, error) {
 		log.Info("Start to upgrade CSIOperator", log.String("name", csiOperator.Name))
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, csiOperator.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && k8serrors.IsNotFound(err) {
 			return false, err
 		}
@@ -813,7 +813,7 @@ func (c *Controller) upgradeCSIOperator(
 			return true, nil
 		}
 
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}

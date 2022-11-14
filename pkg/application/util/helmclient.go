@@ -25,15 +25,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applicationv1 "tkestack.io/tke/api/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
 	helmconfig "tkestack.io/tke/pkg/application/helm/config"
 	applicationprovider "tkestack.io/tke/pkg/application/provider/application"
 )
 
 // NewHelmClientWithProvider return a new helm client used to run helm cmd
-func NewHelmClientWithProvider(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, app *applicationv1.App) (*helmaction.Client, error) {
+func NewHelmClientWithProvider(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, app *applicationv1.App) (*helmaction.Client, error) {
 	provider, err := applicationprovider.GetProvider(app)
 	if err != nil {
 		return nil, err
@@ -51,10 +51,10 @@ func NewHelmClientWithProvider(ctx context.Context, platformClient platformversi
 
 // NewHelmClient return a new client used to run helm cmd
 func NewHelmClient(ctx context.Context,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	clusterID string,
 	namespace string) (*helmaction.Client, error) {
-	var credential *platformv1.ClusterCredential
+	var credential *platformv2.ClusterCredential
 	cluster, err := platformClient.Clusters().Get(ctx, clusterID, metav1.GetOptions{})
 	if err != nil {
 		return nil, err

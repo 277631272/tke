@@ -32,7 +32,7 @@ import (
 	registryinternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/registry/internalversion"
 	authversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/auth/v1"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/registry"
 	v1 "tkestack.io/tke/api/registry/v1"
 	"tkestack.io/tke/pkg/apiserver/storage"
@@ -58,7 +58,7 @@ type StorageProvider struct {
 	PrivilegedUsername   string
 	AuthClient           authversionedclient.AuthV1Interface
 	BusinessClient       businessversionedclient.BusinessV1Interface
-	PlatformClient       platformversionedclient.PlatformV1Interface
+	PlatformClient       platformversionedclient.PlatformV2Interface
 	RegistryConfig       *registryconfig.RegistryConfiguration
 	Authorizer           authorizer.Authorizer
 }

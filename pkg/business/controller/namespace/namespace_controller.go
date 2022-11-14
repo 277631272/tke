@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	v1 "tkestack.io/tke/api/business/v1"
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	businessv1informer "tkestack.io/tke/api/client/informers/externalversions/business/v1"
 	businessv1lister "tkestack.io/tke/api/client/listers/business/v1"
 	cls "tkestack.io/tke/pkg/business/controller/namespace/cluster"
@@ -66,7 +66,7 @@ const (
 // Controller is responsible for performing actions dependent upon a namespace phase.
 type Controller struct {
 	client         clientset.Interface
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	cache          *namespaceCache
 	health         *namespaceHealth
 	queue          workqueue.RateLimitingInterface
@@ -78,7 +78,7 @@ type Controller struct {
 }
 
 // NewController creates a new Controller object.
-func NewController(platformClient platformversionedclient.PlatformV1Interface, client clientset.Interface, namespaceInformer businessv1informer.NamespaceInformer, resyncPeriod time.Duration, finalizerToken v1.FinalizerName) *Controller {
+func NewController(platformClient platformversionedclient.PlatformV2Interface, client clientset.Interface, namespaceInformer businessv1informer.NamespaceInformer, resyncPeriod time.Duration, finalizerToken v1.FinalizerName) *Controller {
 	// create the controller so we can inject the enqueue function
 	controller := &Controller{
 		client:                     client,

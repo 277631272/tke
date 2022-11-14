@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/restmapper"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
 	authv1 "tkestack.io/tke/api/client/clientset/versioned/typed/auth/v1"
-	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryv1 "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/cmd/tke-business-controller/app/config"
@@ -73,7 +73,7 @@ type ControllerContext struct {
 	ControllerStartInterval time.Duration
 
 	AuthClient     authv1.AuthV1Interface
-	PlatformClient platformv1.PlatformV1Interface
+	PlatformClient platformv2.PlatformV2Interface
 	RegistryClient registryv1.RegistryV1Interface
 }
 
@@ -123,7 +123,7 @@ func CreateControllerContext(cfg *config.Config, rootClientBuilder controller.Cl
 		ResyncPeriod:            controller.ResyncPeriod(&cfg.Component),
 		ControllerStartInterval: cfg.Component.ControllerStartInterval,
 
-		PlatformClient: platformClient.PlatformV1(),
+		PlatformClient: platformClient.PlatformV2(),
 	}
 
 	if cfg.RegistryAPIServerClientConfig != nil {

@@ -21,14 +21,14 @@ package deletion
 import (
 	"context"
 	"fmt"
+	v2 "tkestack.io/tke/api/platform/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	v1clientset "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	v1 "tkestack.io/tke/api/platform/v1"
+	v2clientset "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	machineprovider "tkestack.io/tke/pkg/platform/provider/machine"
 	"tkestack.io/tke/pkg/util/log"
@@ -40,9 +40,9 @@ type MachineDeleterInterface interface {
 }
 
 // NewMachineDeleter creates the machineeleter object and returns it.
-func NewMachineDeleter(machineClient v1clientset.MachineInterface,
-	platformClient v1clientset.PlatformV1Interface,
-	finalizerToken v1.FinalizerName,
+func NewMachineDeleter(machineClient v2clientset.MachineInterface,
+	platformClient v2clientset.PlatformV2Interface,
+	finalizerToken v2.FinalizerName,
 	deleteWhenDone bool) MachineDeleterInterface {
 	d := &machineDeleter{
 		machineClient:  machineClient,
@@ -58,21 +58,22 @@ var _ MachineDeleterInterface = &machineDeleter{}
 // machineDeleter is used to delete all resources in a given machine.
 type machineDeleter struct {
 	// Client to manipulate the machine.
-	machineClient  v1clientset.MachineInterface
-	platformClient v1clientset.PlatformV1Interface
+	machineClient  v2clientset.MachineInterface
+	platformClient v2clientset.PlatformV2Interface
 	// The finalizer token that should be removed from the machine
 	// when all resources in that machine have been deleted.
-	finalizerToken v1.FinalizerName
+	finalizerToken v2.FinalizerName
 	// Also delete the machine when all resources in the machine have been deleted.
 	deleteWhenDone bool
 }
 
 // Delete deletes all resources in the given machine.
 // Before deleting resources:
-// * It ensures that deletion timestamp is set on the
-//   machine (does nothing if deletion timestamp is missing).
-// * Verifies that the machine is in the "terminating" phase
-//   (updates the machine phase if it is not yet marked terminating)
+//   - It ensures that deletion timestamp is set on the
+//     machine (does nothing if deletion timestamp is missing).
+//   - Verifies that the machine is in the "terminating" phase
+//     (updates the machine phase if it is not yet marked terminating)
+//
 // After deleting the resources:
 // * It removes finalizer token from the given machine.
 // * Deletes the machine if deleteWhenDone is true.
@@ -144,7 +145,7 @@ func (d *machineDeleter) Delete(ctx context.Context, name string) error {
 }
 
 // Deletes the given machine.
-func (d *machineDeleter) deleteMachine(machine *v1.Machine) error {
+func (d *machineDeleter) deleteMachine(machine *v2.Machine) error {
 	var opts metav1.DeleteOptions
 	uid := machine.UID
 	if len(uid) > 0 {
@@ -158,12 +159,12 @@ func (d *machineDeleter) deleteMachine(machine *v1.Machine) error {
 }
 
 // updateMachineFunc is a function that makes an update to a namespace
-type updateMachineFunc func(ctx context.Context, machine *v1.Machine) (*v1.Machine, error)
+type updateMachineFunc func(ctx context.Context, machine *v2.Machine) (*v2.Machine, error)
 
 // retryOnConflictError retries the specified fn if there was a conflict error
 // it will return an error if the UID for an object changes across retry operations.
 // TODO RetryOnConflict should be a generic concept in client code
-func (d *machineDeleter) retryOnConflictError(ctx context.Context, machine *v1.Machine, fn updateMachineFunc) (result *v1.Machine, err error) {
+func (d *machineDeleter) retryOnConflictError(ctx context.Context, machine *v2.Machine, fn updateMachineFunc) (result *v2.Machine, err error) {
 	latestMachine := machine
 	for {
 		result, err = fn(ctx, latestMachine)
@@ -185,25 +186,25 @@ func (d *machineDeleter) retryOnConflictError(ctx context.Context, machine *v1.M
 }
 
 // updateMachineStatusFunc will verify that the status of the machine is correct
-func (d *machineDeleter) updateMachineStatusFunc(ctx context.Context, machine *v1.Machine) (*v1.Machine, error) {
-	if machine.DeletionTimestamp.IsZero() || machine.Status.Phase == v1.MachineTerminating {
+func (d *machineDeleter) updateMachineStatusFunc(ctx context.Context, machine *v2.Machine) (*v2.Machine, error) {
+	if machine.DeletionTimestamp.IsZero() || machine.Status.Phase == v2.MachineTerminating {
 		return machine, nil
 	}
-	newMachine := v1.Machine{}
+	newMachine := v2.Machine{}
 	newMachine.ObjectMeta = machine.ObjectMeta
 	newMachine.Status = machine.Status
-	newMachine.Status.Phase = v1.MachineTerminating
+	newMachine.Status.Phase = v2.MachineTerminating
 	return d.machineClient.UpdateStatus(context.Background(), &newMachine, metav1.UpdateOptions{})
 }
 
 // finalized returns true if the machine.Spec.Finalizers is an empty list
-func finalized(machine *v1.Machine) bool {
+func finalized(machine *v2.Machine) bool {
 	return len(machine.Spec.Finalizers) == 0
 }
 
 // finalizeMachine removes the specified finalizerToken and finalizes the machine
-func (d *machineDeleter) finalizeMachine(ctx context.Context, machine *v1.Machine) (*v1.Machine, error) {
-	machineFinalize := v1.Machine{}
+func (d *machineDeleter) finalizeMachine(ctx context.Context, machine *v2.Machine) (*v2.Machine, error) {
+	machineFinalize := v2.Machine{}
 	machineFinalize.ObjectMeta = machine.ObjectMeta
 	machineFinalize.Spec = machine.Spec
 
@@ -213,12 +214,12 @@ func (d *machineDeleter) finalizeMachine(ctx context.Context, machine *v1.Machin
 			finalizerSet.Insert(string(machine.Spec.Finalizers[i]))
 		}
 	}
-	machineFinalize.Spec.Finalizers = make([]v1.FinalizerName, 0, len(finalizerSet))
+	machineFinalize.Spec.Finalizers = make([]v2.FinalizerName, 0, len(finalizerSet))
 	for _, value := range finalizerSet.List() {
-		machineFinalize.Spec.Finalizers = append(machineFinalize.Spec.Finalizers, v1.FinalizerName(value))
+		machineFinalize.Spec.Finalizers = append(machineFinalize.Spec.Finalizers, v2.FinalizerName(value))
 	}
 
-	machine = &v1.Machine{}
+	machine = &v2.Machine{}
 	err := d.platformClient.RESTClient().Put().
 		Resource("machines").
 		Name(machineFinalize.Name).
@@ -236,14 +237,14 @@ func (d *machineDeleter) finalizeMachine(ctx context.Context, machine *v1.Machin
 	return machine, err
 }
 
-type deleteResourceFunc func(ctx context.Context, deleter *machineDeleter, machine *v1.Machine) error
+type deleteResourceFunc func(ctx context.Context, deleter *machineDeleter, machine *v2.Machine) error
 
 var deleteResourceFuncs = []deleteResourceFunc{
 	deleteMachineProvider,
 }
 
 // deleteAllContent will use the client to delete each resource identified in machine.
-func (d *machineDeleter) deleteAllContent(ctx context.Context, machine *v1.Machine) error {
+func (d *machineDeleter) deleteAllContent(ctx context.Context, machine *v2.Machine) error {
 	log.FromContext(ctx).Info("deleteAllContent doing")
 
 	var errs []error
@@ -264,7 +265,7 @@ func (d *machineDeleter) deleteAllContent(ctx context.Context, machine *v1.Machi
 	return nil
 }
 
-func deleteMachineProvider(ctx context.Context, deleter *machineDeleter, machine *v1.Machine) error {
+func deleteMachineProvider(ctx context.Context, deleter *machineDeleter, machine *v2.Machine) error {
 	log.FromContext(ctx).Info("deleteMachineProvider doing")
 
 	provider, err := machineprovider.GetProvider(machine.Spec.Type)

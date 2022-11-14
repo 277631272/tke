@@ -26,17 +26,16 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
 	"tkestack.io/tke/pkg/util/log"
 
 	"github.com/thoas/go-funk"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/server/mux"
 	"k8s.io/client-go/rest"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/types"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/platform/util/credential"
 )
 
@@ -64,24 +63,24 @@ type ControllerProvider interface {
 	// Teardown called by controller for plugin do some clean job.
 	Teardown() error
 	// NeedUpdate could be implemented by user to judge whether cluster need update or not.
-	NeedUpdate(old, new *platformv1.Cluster) bool
+	NeedUpdate(old, new *platformv2.Cluster) bool
 
-	OnCreate(ctx context.Context, cluster *v1.Cluster) error
-	OnUpdate(ctx context.Context, cluster *v1.Cluster) error
-	OnDelete(ctx context.Context, cluster *v1.Cluster) error
+	OnCreate(ctx context.Context, cluster *v2.Cluster) error
+	OnUpdate(ctx context.Context, cluster *v2.Cluster) error
+	OnDelete(ctx context.Context, cluster *v2.Cluster) error
 	// OnFilter called by cluster controller informer for plugin
 	// do the filter on the cluster obj for specific case:
 	// return bool:
 	//  false: drop the object to the queue
 	//  true: add the object to queue, AddFunc and UpdateFunc will
 	//  go through later
-	OnFilter(ctx context.Context, cluster *platformv1.Cluster) bool
+	OnFilter(ctx context.Context, cluster *platformv2.Cluster) bool
 	// OnRunning call on first running.
-	OnRunning(ctx context.Context, cluster *v1.Cluster) error
+	OnRunning(ctx context.Context, cluster *v2.Cluster) error
 }
 
 type RestConfigProvider interface {
-	GetRestConfig(ctx context.Context, cluster *platformv1.Cluster, username string) (*rest.Config, error)
+	GetRestConfig(ctx context.Context, cluster *platformv2.Cluster, username string) (*rest.Config, error)
 }
 
 // Provider defines a set of response interfaces for specific cluster
@@ -96,7 +95,7 @@ type Provider interface {
 
 var _ Provider = &DelegateProvider{}
 
-type Handler func(context.Context, *v1.Cluster) error
+type Handler func(context.Context, *v2.Cluster) error
 
 func (h Handler) Name() string {
 	name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
@@ -121,7 +120,7 @@ type DelegateProvider struct {
 	UpgradeHandlers   []Handler
 	ScaleUpHandlers   []Handler
 	ScaleDownHandlers []Handler
-	PlatformClient    platformv1client.PlatformV1Interface
+	PlatformClient    platformv2client.PlatformV2Interface
 }
 
 func (p *DelegateProvider) Name() string {
@@ -174,31 +173,31 @@ func (p *DelegateProvider) AfterCreate(cluster *types.Cluster) error {
 	return nil
 }
 
-func (p *DelegateProvider) getUpdateReason(c *v1.Cluster) (reason string) {
-	if c.Status.Phase == platformv1.ClusterUpgrading {
-		return fmt.Sprintf("%s to kubernetes %s", platformv1.ClusterUpgrading, c.Spec.Version)
+func (p *DelegateProvider) getUpdateReason(c *v2.Cluster) (reason string) {
+	if c.Status.Phase == platformv2.ClusterUpgrading {
+		return fmt.Sprintf("%s to kubernetes %s", platformv2.ClusterUpgrading, c.Spec.Version)
 	}
-	if c.Status.Phase == platformv1.ClusterUpscaling {
+	if c.Status.Phase == platformv2.ClusterUpscaling {
 		var ips []string
 		for _, machine := range c.Spec.ScalingMachines {
 			ips = append(ips, machine.IP)
 		}
-		return fmt.Sprintf("%s on machine %s", platformv1.ClusterUpscaling, strings.Join(ips, ","))
+		return fmt.Sprintf("%s on machine %s", platformv2.ClusterUpscaling, strings.Join(ips, ","))
 	}
 	return ""
 }
 
-func (p *DelegateProvider) OnCreate(ctx context.Context, cluster *v1.Cluster) error {
-	condition, err := p.getCurrentCondition(cluster, platformv1.ClusterInitializing, p.CreateHandlers)
+func (p *DelegateProvider) OnCreate(ctx context.Context, cluster *v2.Cluster) error {
+	condition, err := p.getCurrentCondition(cluster, platformv2.ClusterInitializing, p.CreateHandlers)
 	if err != nil {
 		return err
 	}
 
 	if cluster.Spec.Features.SkipConditions != nil &&
 		funk.ContainsString(cluster.Spec.Features.SkipConditions, condition.Type) {
-		cluster.SetCondition(platformv1.ClusterCondition{
+		cluster.SetCondition(platformv2.ClusterCondition{
 			Type:    condition.Type,
-			Status:  platformv1.ConditionTrue,
+			Status:  platformv2.ConditionTrue,
 			Reason:  ReasonSkip,
 			Message: "Skip current condition",
 		}, false)
@@ -213,31 +212,31 @@ func (p *DelegateProvider) OnCreate(ctx context.Context, cluster *v1.Cluster) er
 		err = handler(ctx, cluster)
 		log.FromContext(ctx).Info("Done", "error", err, "cost", time.Since(startTime).String())
 		if err != nil {
-			cluster.SetCondition(platformv1.ClusterCondition{
+			cluster.SetCondition(platformv2.ClusterCondition{
 				Type:    condition.Type,
-				Status:  platformv1.ConditionFalse,
+				Status:  platformv2.ConditionFalse,
 				Message: err.Error(),
 				Reason:  ReasonFailedInit,
 			}, false)
 			return nil
 		}
 
-		cluster.SetCondition(platformv1.ClusterCondition{
+		cluster.SetCondition(platformv2.ClusterCondition{
 			Type:   condition.Type,
-			Status: platformv1.ConditionTrue,
+			Status: platformv2.ConditionTrue,
 		}, false)
 	}
 
 	nextConditionType := p.getNextConditionType(condition.Type, p.CreateHandlers)
 	if nextConditionType == ConditionTypeDone {
-		cluster.Status.Phase = platformv1.ClusterRunning
+		cluster.Status.Phase = platformv2.ClusterRunning
 		if err := p.OnRunning(ctx, cluster); err != nil {
 			return fmt.Errorf("%s.OnRunning error: %w", p.Name(), err)
 		}
 	} else {
-		cluster.SetCondition(platformv1.ClusterCondition{
+		cluster.SetCondition(platformv2.ClusterCondition{
 			Type:    nextConditionType,
-			Status:  platformv1.ConditionUnknown,
+			Status:  platformv2.ConditionUnknown,
 			Message: "waiting execute",
 			Reason:  ReasonWaiting,
 		}, false)
@@ -246,20 +245,20 @@ func (p *DelegateProvider) OnCreate(ctx context.Context, cluster *v1.Cluster) er
 	return nil
 }
 
-func (p *DelegateProvider) OnUpdate(ctx context.Context, cluster *v1.Cluster) error {
+func (p *DelegateProvider) OnUpdate(ctx context.Context, cluster *v2.Cluster) error {
 	handlers := []Handler{}
 	phase := cluster.Status.Phase
-	if phase == platformv1.ClusterRunning || phase == platformv1.ClusterFailed {
+	if phase == platformv2.ClusterRunning || phase == platformv2.ClusterFailed {
 		handlers = p.UpdateHandlers
 		return p.houseKeeping(ctx, cluster, handlers)
 	}
-	if phase == platformv1.ClusterUpgrading {
+	if phase == platformv2.ClusterUpgrading {
 		handlers = p.UpgradeHandlers
 	}
-	if phase == platformv1.ClusterUpscaling {
+	if phase == platformv2.ClusterUpscaling {
 		handlers = p.CreateHandlers
 	}
-	if phase == platformv1.ClusterDownscaling {
+	if phase == platformv2.ClusterDownscaling {
 		handlers = p.ScaleDownHandlers
 	}
 	condition, err := p.getCurrentCondition(cluster, phase, handlers)
@@ -271,9 +270,9 @@ func (p *DelegateProvider) OnUpdate(ctx context.Context, cluster *v1.Cluster) er
 	}
 	if cluster.Spec.Features.SkipConditions != nil &&
 		funk.ContainsString(cluster.Spec.Features.SkipConditions, condition.Type) {
-		cluster.SetCondition(platformv1.ClusterCondition{
+		cluster.SetCondition(platformv2.ClusterCondition{
 			Type:    condition.Type,
-			Status:  platformv1.ConditionTrue,
+			Status:  platformv2.ConditionTrue,
 			Reason:  ReasonSkip,
 			Message: "Skip current condition",
 		}, true)
@@ -288,31 +287,31 @@ func (p *DelegateProvider) OnUpdate(ctx context.Context, cluster *v1.Cluster) er
 		err = handler(ctx, cluster)
 		log.FromContext(ctx).Info("Done", "error", err, "cost", time.Since(startTime).String())
 		if err != nil {
-			cluster.SetCondition(platformv1.ClusterCondition{
+			cluster.SetCondition(platformv2.ClusterCondition{
 				Type:    condition.Type,
-				Status:  platformv1.ConditionFalse,
+				Status:  platformv2.ConditionFalse,
 				Message: err.Error(),
 				Reason:  ReasonFailedUpdate,
 			}, true)
 			return nil
 		}
-		cluster.SetCondition(platformv1.ClusterCondition{
+		cluster.SetCondition(platformv2.ClusterCondition{
 			Type:   condition.Type,
-			Status: platformv1.ConditionTrue,
+			Status: platformv2.ConditionTrue,
 			Reason: p.getUpdateReason(cluster),
 		}, true)
 	}
 
 	nextConditionType := p.getNextConditionType(condition.Type, handlers)
 	if nextConditionType == ConditionTypeDone {
-		cluster.Status.Phase = platformv1.ClusterRunning
+		cluster.Status.Phase = platformv2.ClusterRunning
 		if err := p.OnRunning(ctx, cluster); err != nil {
 			return fmt.Errorf("%s.OnRunning error: %w", p.Name(), err)
 		}
 	} else {
-		cluster.SetCondition(platformv1.ClusterCondition{
+		cluster.SetCondition(platformv2.ClusterCondition{
 			Type:    nextConditionType,
-			Status:  platformv1.ConditionUnknown,
+			Status:  platformv2.ConditionUnknown,
 			Message: "waiting execute",
 			Reason:  ReasonWaiting,
 		}, true)
@@ -321,7 +320,7 @@ func (p *DelegateProvider) OnUpdate(ctx context.Context, cluster *v1.Cluster) er
 	return nil
 }
 
-func (p *DelegateProvider) OnDelete(ctx context.Context, cluster *v1.Cluster) error {
+func (p *DelegateProvider) OnDelete(ctx context.Context, cluster *v2.Cluster) error {
 	for _, handler := range p.DeleteHandlers {
 		ctx := log.FromContext(ctx).WithName("ClusterProvider.OnDelete").WithName(handler.Name()).WithContext(ctx)
 		log.FromContext(ctx).Info("Doing")
@@ -340,15 +339,15 @@ func (p *DelegateProvider) OnDelete(ctx context.Context, cluster *v1.Cluster) er
 	return nil
 }
 
-func (p *DelegateProvider) OnRunning(ctx context.Context, cluster *v1.Cluster) error {
+func (p *DelegateProvider) OnRunning(ctx context.Context, cluster *v2.Cluster) error {
 	return nil
 }
 
-func (p *DelegateProvider) OnFilter(ctx context.Context, cluster *platformv1.Cluster) (pass bool) {
+func (p *DelegateProvider) OnFilter(ctx context.Context, cluster *platformv2.Cluster) (pass bool) {
 	return true
 }
 
-func (p *DelegateProvider) NeedUpdate(old, new *platformv1.Cluster) bool {
+func (p *DelegateProvider) NeedUpdate(old, new *platformv2.Cluster) bool {
 	return false
 }
 
@@ -380,7 +379,7 @@ func (p *DelegateProvider) getHandler(conditionType string, handlers []Handler) 
 	return nil
 }
 
-func (p *DelegateProvider) houseKeeping(ctx context.Context, cluster *v1.Cluster, handlers []Handler) error {
+func (p *DelegateProvider) houseKeeping(ctx context.Context, cluster *v2.Cluster, handlers []Handler) error {
 	for _, handler := range p.UpdateHandlers {
 		ctx := log.FromContext(ctx).WithName("ClusterProvider.OnUpdate").WithName(handler.Name()).WithContext(ctx)
 		log.FromContext(ctx).Info("Doing")
@@ -398,7 +397,7 @@ func (p *DelegateProvider) houseKeeping(ctx context.Context, cluster *v1.Cluster
 	return nil
 }
 
-func (p *DelegateProvider) getCurrentCondition(c *v1.Cluster, phase platformv1.ClusterPhase, handlers []Handler) (*platformv1.ClusterCondition, error) {
+func (p *DelegateProvider) getCurrentCondition(c *v2.Cluster, phase platformv2.ClusterPhase, handlers []Handler) (*platformv2.ClusterCondition, error) {
 	if c.Status.Phase != phase {
 		return nil, fmt.Errorf("cluster phase is %s now", phase)
 	}
@@ -407,25 +406,25 @@ func (p *DelegateProvider) getCurrentCondition(c *v1.Cluster, phase platformv1.C
 	}
 
 	if len(c.Status.Conditions) == 0 {
-		return &platformv1.ClusterCondition{
+		return &platformv2.ClusterCondition{
 			Type:    handlers[0].Name(),
-			Status:  platformv1.ConditionUnknown,
+			Status:  platformv2.ConditionUnknown,
 			Message: "waiting process",
 			Reason:  ReasonWaiting,
 		}, nil
 	}
 	for _, condition := range c.Status.Conditions {
-		if condition.Status == platformv1.ConditionFalse || condition.Status == platformv1.ConditionUnknown {
+		if condition.Status == platformv2.ConditionFalse || condition.Status == platformv2.ConditionUnknown {
 			return &condition, nil
 		}
 	}
-	if c.Status.Phase == platformv1.ClusterUpgrading ||
-		c.Status.Phase == platformv1.ClusterUpscaling ||
-		c.Status.Phase == platformv1.ClusterDownscaling ||
-		c.Status.Phase == platformv1.ClusterRunning {
-		return &platformv1.ClusterCondition{
+	if c.Status.Phase == platformv2.ClusterUpgrading ||
+		c.Status.Phase == platformv2.ClusterUpscaling ||
+		c.Status.Phase == platformv2.ClusterDownscaling ||
+		c.Status.Phase == platformv2.ClusterRunning {
+		return &platformv2.ClusterCondition{
 			Type:    handlers[0].Name(),
-			Status:  platformv1.ConditionUnknown,
+			Status:  platformv2.ConditionUnknown,
 			Message: "waiting process",
 			Reason:  ReasonWaiting,
 		}, nil
@@ -434,8 +433,8 @@ func (p *DelegateProvider) getCurrentCondition(c *v1.Cluster, phase platformv1.C
 }
 
 // GetRestConfig returns the cluster's rest config
-func (p *DelegateProvider) GetRestConfig(ctx context.Context, cluster *platformv1.Cluster, username string) (*rest.Config, error) {
-	cc, err := credential.GetClusterCredentialV1(ctx, p.PlatformClient, cluster, username)
+func (p *DelegateProvider) GetRestConfig(ctx context.Context, cluster *platformv2.Cluster, username string) (*rest.Config, error) {
+	cc, err := credential.GetClusterCredentialV2(ctx, p.PlatformClient, cluster, username)
 	if err != nil {
 		return nil, err
 	}

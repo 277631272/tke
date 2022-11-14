@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/monitor/services"
 	"tkestack.io/tke/pkg/monitor/services/alertmanager"
 	"tkestack.io/tke/pkg/monitor/services/prometheus"
@@ -47,13 +47,13 @@ const (
 )
 
 type processor struct {
-	platformClient        platformversionedclient.PlatformV1Interface
+	platformClient        platformversionedclient.PlatformV2Interface
 	prometheusProcessor   services.RuleProcessor
 	alertmanagerProcessor services.RouteProcessor
 }
 
 // NewProcessor returns a processor to handle prometheus rules changes
-func NewProcessor(platformClient platformversionedclient.PlatformV1Interface) services.BackendConfigProcessor {
+func NewProcessor(platformClient platformversionedclient.PlatformV2Interface) services.BackendConfigProcessor {
 	return &processor{
 		platformClient:        platformClient,
 		prometheusProcessor:   prometheus.NewProcessor(platformClient),

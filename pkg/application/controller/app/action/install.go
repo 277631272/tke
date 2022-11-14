@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	appconfig "tkestack.io/tke/pkg/application/config"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
 	helmutil "tkestack.io/tke/pkg/application/helm/util"
@@ -36,7 +36,7 @@ import (
 // Install installs a chart archive
 func Install(ctx context.Context,
 	applicationClient applicationversionedclient.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	app *applicationv1.App,
 	repo appconfig.RepoConfiguration,
 	updateStatusFunc applicationprovider.UpdateStatusFunc) (*applicationv1.App, error) {

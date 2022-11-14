@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
 	"tkestack.io/tke/api/client/informers/externalversions"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/controller/addon/cronhpa"
 	"tkestack.io/tke/pkg/platform/controller/addon/persistentevent"
 	"tkestack.io/tke/pkg/platform/controller/addon/storage/csioperator"
@@ -44,15 +44,15 @@ const (
 )
 
 func startClusterController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "clusters"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v2", Resource: "clusters"}] {
 		return nil, false, nil
 	}
 
 	ctrl := clustercontroller.NewController(
-		ctx.ClientBuilder.ClientOrDie("cluster-controller").PlatformV1(),
-		ctx.InformerFactory.Platform().V1().Clusters(),
+		ctx.ClientBuilder.ClientOrDie("cluster-controller").PlatformV2(),
+		ctx.InformerFactory.Platform().V2().Clusters(),
 		ctx.Config.ClusterController,
-		platformv1.ClusterFinalize,
+		platformv2.ClusterFinalize,
 	)
 
 	go func() {
@@ -63,15 +63,15 @@ func startClusterController(ctx ControllerContext) (http.Handler, bool, error) {
 }
 
 func startMachineController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "machines"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v1", Resource: "machines"}] {
 		return nil, false, nil
 	}
 
 	ctrl := machine.NewController(
-		ctx.ClientBuilder.ClientOrDie("machine-controller").PlatformV1(),
-		ctx.InformerFactory.Platform().V1().Machines(),
+		ctx.ClientBuilder.ClientOrDie("machine-controller").PlatformV2(),
+		ctx.InformerFactory.Platform().V2().Machines(),
 		ctx.Config.MachineController,
-		platformv1.MachineFinalize,
+		platformv2.MachineFinalize,
 	)
 
 	go func() {
@@ -82,7 +82,7 @@ func startMachineController(ctx ControllerContext) (http.Handler, bool, error) {
 }
 
 func startPersistentEventController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "persistentevents"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v1", Resource: "persistentevents"}] {
 		return nil, false, nil
 	}
 
@@ -100,7 +100,7 @@ func startPersistentEventController(ctx ControllerContext) (http.Handler, bool, 
 }
 
 func startTappControllerController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "tappcontrollers"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v1", Resource: "tappcontrollers"}] {
 		return nil, false, nil
 	}
 
@@ -118,7 +118,7 @@ func startTappControllerController(ctx ControllerContext) (http.Handler, bool, e
 }
 
 func startCronHPAController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "cronhpas"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v1", Resource: "cronhpas"}] {
 		return nil, false, nil
 	}
 
@@ -136,7 +136,7 @@ func startCronHPAController(ctx ControllerContext) (http.Handler, bool, error) {
 }
 
 func startCSIOperatorController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "csioperators"}] {
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v1", Resource: "csioperators"}] {
 		return nil, false, nil
 	}
 
@@ -154,7 +154,7 @@ func startCSIOperatorController(ctx ControllerContext) (http.Handler, bool, erro
 }
 
 func startBootstrapAppsController(ctx ControllerContext) (http.Handler, bool, error) {
-	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv1.GroupName, Version: "v1", Resource: "clusters"}] ||
+	if !ctx.AvailableResources[schema.GroupVersionResource{Group: platformv2.GroupName, Version: "v1", Resource: "clusters"}] ||
 		ctx.ApplicationClient == nil {
 		return nil, false, nil
 	}
@@ -162,12 +162,12 @@ func startBootstrapAppsController(ctx ControllerContext) (http.Handler, bool, er
 	appInformerFactory := externalversions.NewSharedInformerFactory(appclientset, ctx.ResyncPeriod())
 
 	ctrl := bootstrapps.NewBootstrapAppsController(
-		ctx.ClientBuilder.ClientOrDie("bootstrap-apps-controller").PlatformV1(),
+		ctx.ClientBuilder.ClientOrDie("bootstrap-apps-controller").PlatformV2(),
 		appclientset.ApplicationV1(),
-		ctx.InformerFactory.Platform().V1().Clusters(),
+		ctx.InformerFactory.Platform().V2().Clusters(),
 		appInformerFactory.Application().V1().Apps(),
 		ctx.Config.ClusterController,
-		platformv1.ClusterFinalize,
+		platformv2.ClusterFinalize,
 	)
 
 	appInformerFactory.Start(ctx.Stop)

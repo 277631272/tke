@@ -407,12 +407,12 @@ func (c *Controller) createPersistentEventIfNeeded(ctx context.Context, key stri
 func (c *Controller) installPersistentEventComponent(ctx context.Context, persistentEvent *v1.PersistentEvent) error {
 	log.Info("start to create Persistent event for the persistentEvent" + persistentEvent.Spec.ClusterName)
 
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -475,14 +475,14 @@ func (c *Controller) installPersistentEventComponent(ctx context.Context, persis
 }
 
 func (c *Controller) uninstallPersistentEventComponent(ctx context.Context, persistentEvent *v1.PersistentEvent) error {
-	cluster, err := c.client.PlatformV1().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := c.client.PlatformV2().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil && errors.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+	kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 	if err != nil {
 		return err
 	}
@@ -529,7 +529,7 @@ func (c *Controller) watchPersistentEventHealth(ctx context.Context, key string)
 			return false, err
 		}
 
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -541,7 +541,7 @@ func (c *Controller) watchPersistentEventHealth(ctx context.Context, key string)
 			return true, nil
 		}
 
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}
@@ -565,7 +565,7 @@ func (c *Controller) watchPersistentEventHealth(ctx context.Context, key string)
 func (c *Controller) checkDeploymentStatus(ctx context.Context, persistentEvent *v1.PersistentEvent, key string) func() (bool, error) {
 	return func() (bool, error) {
 		log.Info("Start to check the persistent event deployment health", log.String("clusterName", persistentEvent.Spec.ClusterName))
-		cluster, err := c.client.PlatformV1().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.client.PlatformV2().Clusters().Get(ctx, persistentEvent.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -576,7 +576,7 @@ func (c *Controller) checkDeploymentStatus(ctx context.Context, persistentEvent 
 			log.Info("checking over.")
 			return true, nil
 		}
-		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV1())
+		kubeClient, err := util.BuildExternalClientSet(ctx, cluster, c.client.PlatformV2())
 		if err != nil {
 			return false, err
 		}

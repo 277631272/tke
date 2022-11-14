@@ -28,9 +28,9 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	businessv1 "tkestack.io/tke/api/business/v1"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/monitor"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	apiserverutil "tkestack.io/tke/pkg/apiserver/util"
 	"tkestack.io/tke/pkg/monitor/util/cache"
@@ -43,7 +43,7 @@ type Storage struct {
 }
 
 // NewStorage returns a Storage object that will work against metrics.
-func NewStorage(_ genericregistry.RESTOptionsGetter, platformClient platformversionedclient.PlatformV1Interface,
+func NewStorage(_ genericregistry.RESTOptionsGetter, platformClient platformversionedclient.PlatformV2Interface,
 	businessClient businessversionedclient.BusinessV1Interface, cacher cache.Cacher) *Storage {
 	return &Storage{
 		ClusterOverview: &REST{
@@ -57,7 +57,7 @@ func NewStorage(_ genericregistry.RESTOptionsGetter, platformClient platformvers
 // REST implements a RESTStorage for metrics against etcd.
 type REST struct {
 	rest.Storage
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	businessClient businessversionedclient.BusinessV1Interface
 	cacher         cache.Cacher
 }
@@ -90,7 +90,7 @@ func (r *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateOb
 	log.Infof("create cluster overview: %+v, tenantID: %+v, wrappedOptions: %+v",
 		listOptions, tenantID, wrappedOptions)
 
-	clusters := make([]*platformv1.Cluster, 0)
+	clusters := make([]*platformv2.Cluster, 0)
 	if clusterList, err := r.platformClient.Clusters().List(ctx, listOptions); err == nil && clusterList != nil {
 		for i := 0; i < len(clusterList.Items); i++ {
 			clusters = append(clusters, &clusterList.Items[i])

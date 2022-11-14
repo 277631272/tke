@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/cmd/tke-logagent-controller/app/config"
 	"tkestack.io/tke/pkg/controller"
@@ -64,7 +64,7 @@ type ControllerContext struct {
 	// for an individual controller to start the shared informers. Before it is closed, they should not.
 	InformersStarted chan struct{}
 
-	PlatformClient platformv1.PlatformV1Interface
+	PlatformClient platformv2.PlatformV2Interface
 
 	// ResyncPeriod generates a duration each time it is invoked; this is so that
 	// multiple controllers don't get into lock-step and all hammer the apiserver
@@ -111,7 +111,7 @@ func CreateControllerContext(cfg *config.Config, rootClientBuilder controller.Cl
 
 	ctx := ControllerContext{
 		ClientBuilder:           rootClientBuilder,
-		PlatformClient:          platformClient.PlatformV1(),
+		PlatformClient:          platformClient.PlatformV2(),
 		InformerFactory:         sharedInformers,
 		RESTMapper:              restMapper,
 		AvailableResources:      availableResources,

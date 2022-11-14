@@ -28,13 +28,13 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/client-go/tools/cache"
 	"tkestack.io/tke/api/authz"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 )
 
 var ValidateMultiClusterRoleBindingName = apimachineryvalidation.NameIsDNSLabel
 
 // ValidateMultiClusterRoleBinding tests if required fields in the cluster are set.
-func ValidateMultiClusterRoleBinding(mcrb *authz.MultiClusterRoleBinding, roleGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) field.ErrorList {
+func ValidateMultiClusterRoleBinding(mcrb *authz.MultiClusterRoleBinding, roleGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) field.ErrorList {
 	allErrs := apimachineryvalidation.ValidateObjectMeta(&mcrb.ObjectMeta, true, ValidateMultiClusterRoleBindingName, field.NewPath("metadata"))
 	if len(mcrb.Spec.TenantID) == 0 {
 		allErrs = append(allErrs, field.Required(field.NewPath("spec", "tenantID"), "empty tenantID"))
@@ -79,7 +79,7 @@ func ValidateMultiClusterRoleBinding(mcrb *authz.MultiClusterRoleBinding, roleGe
 
 // ValidateMultiClusterRoleBindingUpdate tests if required fields in the namespace set are
 // set during an update.
-func ValidateMultiClusterRoleBindingUpdate(clusterroletemplatebinding *authz.MultiClusterRoleBinding, old *authz.MultiClusterRoleBinding, roleGetter rest.Getter, platformClient platformversionedclient.PlatformV1Interface) field.ErrorList {
+func ValidateMultiClusterRoleBindingUpdate(clusterroletemplatebinding *authz.MultiClusterRoleBinding, old *authz.MultiClusterRoleBinding, roleGetter rest.Getter, platformClient platformversionedclient.PlatformV2Interface) field.ErrorList {
 	allErrs := apimachineryvalidation.ValidateObjectMetaUpdate(&clusterroletemplatebinding.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))
 	allErrs = append(allErrs, ValidateMultiClusterRoleBinding(clusterroletemplatebinding, roleGetter, platformClient)...)
 	return allErrs

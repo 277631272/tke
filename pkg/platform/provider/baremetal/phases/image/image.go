@@ -24,7 +24,7 @@ import (
 
 	platformv1 "tkestack.io/tke/api/platform/v1"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/images"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/ssh"
 )
 
@@ -34,7 +34,7 @@ type Option struct {
 	KubeImages     []string
 }
 
-func PullKubernetesImages(c *v1.Cluster, s ssh.Interface, option *Option) error {
+func PullKubernetesImages(c *v2.Cluster, s ssh.Interface, option *Option) error {
 	images := images.ListKubernetesImageFullNamesWithVersion(option.Version, option.KubeImages)
 	if len(images) == 0 {
 		return fmt.Errorf("images is empty")

@@ -29,7 +29,7 @@ import (
 	"k8s.io/kube-openapi/pkg/common"
 
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/api/logagent"
 	generatedopenapi "tkestack.io/tke/api/openapi"
@@ -56,10 +56,10 @@ type Config struct {
 	VersionedSharedInformerFactory versionedinformers.SharedInformerFactory
 	StorageFactory                 *serverstorage.DefaultStorageFactory
 	PrivilegedUsername             string
-	PlatformClient                 platformversionedclient.PlatformV1Interface
+	PlatformClient                 platformversionedclient.PlatformV2Interface
 }
 
-//config relies on options
+// config relies on options
 func CreateConfigFromOptions(serverName string, opts *options.Options) (*Config, error) {
 	genericAPIServerConfig := genericapiserver.NewConfig(logagent.Codecs)
 	//to support file download we need to change logrun
@@ -133,7 +133,7 @@ func CreateConfigFromOptions(serverName string, opts *options.Options) (*Config,
 		GenericAPIServerConfig:         genericAPIServerConfig,
 		VersionedSharedInformerFactory: versionedInformers,
 		StorageFactory:                 storageFactory,
-		PlatformClient:                 platformClient.PlatformV1(),
+		PlatformClient:                 platformClient.PlatformV2(),
 		PrivilegedUsername:             opts.Authentication.PrivilegedUsername,
 	}, nil
 }

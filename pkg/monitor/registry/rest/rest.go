@@ -25,7 +25,7 @@ import (
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	restclient "k8s.io/client-go/rest"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/monitor"
 	"tkestack.io/tke/api/monitor/v1"
 	"tkestack.io/tke/pkg/apiserver/storage"
@@ -44,7 +44,7 @@ type StorageProvider struct {
 	PrivilegedUsername   string
 	MetricStorage        monitorstorage.MetricStorage
 	Cacher               cache.Cacher
-	PlatformClient       platformversionedclient.PlatformV1Interface
+	PlatformClient       platformversionedclient.PlatformV2Interface
 	BusinessClient       businessversionedclient.BusinessV1Interface
 }
 

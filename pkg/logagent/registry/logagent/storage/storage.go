@@ -27,7 +27,7 @@ import (
 	genericregistry "k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/logagent"
 	apiserverutil "tkestack.io/tke/pkg/apiserver/util"
 	registrylogagent "tkestack.io/tke/pkg/logagent/registry/logagent"
@@ -46,7 +46,7 @@ type Storage struct {
 }
 
 // NewStorage returns a Storage object that will work against channels.
-func NewStorage(optsGetter genericregistry.RESTOptionsGetter, privilegedUsername string, platformClient platformversionedclient.PlatformV1Interface) *Storage {
+func NewStorage(optsGetter genericregistry.RESTOptionsGetter, privilegedUsername string, platformClient platformversionedclient.PlatformV2Interface) *Storage {
 	strategy := registrylogagent.NewStrategy()
 
 	store := &registry.Store{
@@ -112,7 +112,7 @@ func (r *REST) ShortNames() []string {
 	return []string{"loga"}
 }
 
-//No need to implement TODO: remove this function
+// No need to implement TODO: remove this function
 func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	//la := obj.(*logagent.LogAgent)
 	return r.Store.Create(ctx, obj, createValidation, options)

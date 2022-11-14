@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	clientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	applicationv1informer "tkestack.io/tke/api/client/informers/externalversions/application/v1"
 	applicationv1lister "tkestack.io/tke/api/client/listers/application/v1"
 	appconfig "tkestack.io/tke/pkg/application/config"
@@ -63,7 +63,7 @@ const (
 // Controller is responsible for performing actions dependent upon an app phase.
 type Controller struct {
 	client         clientset.Interface
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	repo           appconfig.RepoConfiguration
 	cache          *applicationCache
 	health         *applicationHealth
@@ -78,7 +78,7 @@ type Controller struct {
 // NewController creates a new Controller object.
 func NewController(
 	client clientset.Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	repo appconfig.RepoConfiguration,
 	applicationInformer applicationv1informer.AppInformer,
 	resyncPeriod time.Duration, finalizerToken applicationv1.FinalizerName,

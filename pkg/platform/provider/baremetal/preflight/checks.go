@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/ssh"
 )
 
@@ -41,7 +41,7 @@ var kernelParemeter = []string{
 	"CONFIG_CRYPTO_USER_API_HASH", "CONFIG_CGROUPS", "CONFIG_CGROUP_BPF",
 }
 
-func newCommonChecks(c *v1.Cluster, s ssh.Interface) []Checker {
+func newCommonChecks(c *v2.Cluster, s ssh.Interface) []Checker {
 	var checks []Checker
 	if c.Cluster.Spec.Features.EnableCilium {
 		checks = append(checks, []Checker{
@@ -75,7 +75,7 @@ func newCommonChecks(c *v1.Cluster, s ssh.Interface) []Checker {
 }
 
 // RunMasterChecks checks for master
-func RunMasterChecks(c *v1.Cluster, s ssh.Interface) error {
+func RunMasterChecks(c *v2.Cluster, s ssh.Interface) error {
 	checks := newCommonChecks(c, s)
 	checks = append(checks, []Checker{
 		NumCPUCheck{Interface: s, NumCPU: constants.MinNumCPU},
@@ -97,7 +97,7 @@ func RunMasterChecks(c *v1.Cluster, s ssh.Interface) error {
 }
 
 // RunNodeChecks checks for node
-func RunNodeChecks(c *v1.Cluster, s ssh.Interface) error {
+func RunNodeChecks(c *v2.Cluster, s ssh.Interface) error {
 	checks := newCommonChecks(c, s)
 	checks = append(checks, []Checker{}...)
 

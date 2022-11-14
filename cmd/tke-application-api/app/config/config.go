@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"tkestack.io/tke/api/application"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	generatedopenapi "tkestack.io/tke/api/openapi"
@@ -57,7 +57,7 @@ type Config struct {
 	VersionedSharedInformerFactory versionedinformers.SharedInformerFactory
 	StorageFactory                 *serverstorage.DefaultStorageFactory
 	RegistryClient                 registryversionedclient.RegistryV1Interface
-	PlatformClient                 platformversionedclient.PlatformV1Interface
+	PlatformClient                 platformversionedclient.PlatformV2Interface
 	RepoConfiguration              appconfig.RepoConfiguration
 }
 
@@ -135,7 +135,7 @@ func CreateConfigFromOptions(serverName string, opts *options.Options) (*Config,
 		GenericAPIServerConfig:         genericAPIServerConfig,
 		VersionedSharedInformerFactory: versionedInformers,
 		StorageFactory:                 storageFactory,
-		PlatformClient:                 platformClient.PlatformV1(),
+		PlatformClient:                 platformClient.PlatformV2(),
 	}
 
 	// client config for registry apiserver

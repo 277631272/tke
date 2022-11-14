@@ -38,7 +38,7 @@ import (
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 	registryinternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/registry/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/registry"
 	registryv1 "tkestack.io/tke/api/registry/v1"
 	helmaction "tkestack.io/tke/pkg/application/helm/action"
@@ -57,7 +57,7 @@ import (
 // VersionREST adapts a service registry into apiserver's RESTStorage model.
 type VersionREST struct {
 	store          ChartStorage
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	registryClient *registryinternalclient.RegistryClient
 	registryConfig *registryconfig.RegistryConfiguration
 	externalScheme string
@@ -71,10 +71,11 @@ type VersionREST struct {
 // NewVersionREST returns a wrapper around the underlying generic storage and performs
 // allocations and deallocations of various chart.
 // TODO: all transactional behavior should be supported from within generic storage
-//   or the strategy.
+//
+//	or the strategy.
 func NewVersionREST(
 	store ChartStorage,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	registryClient *registryinternalclient.RegistryClient,
 	registryConfig *registryconfig.RegistryConfiguration,
 	externalScheme string,
@@ -200,7 +201,7 @@ type versionProxyHandler struct {
 type helmOption struct {
 	cluster        string
 	namespace      string
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 }
 
 func (h *versionProxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

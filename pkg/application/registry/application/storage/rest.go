@@ -36,7 +36,7 @@ import (
 	applicationapi "tkestack.io/tke/api/application"
 	v1 "tkestack.io/tke/api/application/v1"
 	applicationinternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/application/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	registryv1 "tkestack.io/tke/api/registry/v1"
 	appconfig "tkestack.io/tke/pkg/application/config"
@@ -52,7 +52,7 @@ import (
 type REST struct {
 	application       ApplicationStorage
 	applicationClient *applicationinternalclient.ApplicationClient
-	platformClient    platformversionedclient.PlatformV1Interface
+	platformClient    platformversionedclient.PlatformV2Interface
 	registryClient    registryversionedclient.RegistryV1Interface
 	authorizer        authorizer.Authorizer
 	repo              appconfig.RepoConfiguration
@@ -71,11 +71,12 @@ type ApplicationStorage interface {
 // NewREST returns a wrapper around the underlying generic storage and performs
 // allocations and deallocations of various helm releases related resources like ports.
 // TODO: all transactional behavior should be supported from within generic storage
-//   or the strategy.
+//
+//	or the strategy.
 func NewREST(
 	application ApplicationStorage,
 	applicationClient *applicationinternalclient.ApplicationClient,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	registryClient registryversionedclient.RegistryV1Interface,
 	authorizer authorizer.Authorizer,
 	repo appconfig.RepoConfiguration,

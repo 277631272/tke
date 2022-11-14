@@ -29,7 +29,7 @@ import (
 	"k8s.io/kube-openapi/pkg/common"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/api/monitor"
 	generatedopenapi "tkestack.io/tke/api/openapi"
@@ -63,7 +63,7 @@ type Config struct {
 	VersionedSharedInformerFactory versionedinformers.SharedInformerFactory
 	StorageFactory                 *serverstorage.DefaultStorageFactory
 	PrivilegedUsername             string
-	PlatformClient                 platformversionedclient.PlatformV1Interface
+	PlatformClient                 platformversionedclient.PlatformV2Interface
 	BusinessClient                 businessversionedclient.BusinessV1Interface
 	MonitorConfig                  *monitorconfig.MonitorConfiguration
 }
@@ -192,7 +192,7 @@ func CreateConfigFromOptions(serverName string, opts *options.Options) (*Config,
 		GenericAPIServerConfig:         genericAPIServerConfig,
 		VersionedSharedInformerFactory: versionedInformers,
 		StorageFactory:                 storageFactory,
-		PlatformClient:                 platformClient.PlatformV1(),
+		PlatformClient:                 platformClient.PlatformV2(),
 		BusinessClient:                 businessClientV1,
 		PrivilegedUsername:             opts.Authentication.PrivilegedUsername,
 		MonitorConfig:                  monitorConfig,

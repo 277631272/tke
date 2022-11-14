@@ -33,7 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/images"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/addons/cniplugins"
@@ -46,7 +46,7 @@ import (
 	"tkestack.io/tke/pkg/platform/provider/baremetal/preflight"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/res"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/util"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
+	typesv2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/apiclient"
 	"tkestack.io/tke/pkg/util/cmdstring"
 	containerregistryutil "tkestack.io/tke/pkg/util/containerregistry"
@@ -59,7 +59,7 @@ const (
 	moduleFile       = "/etc/modules-load.d/tke.conf"
 )
 
-func (p *Provider) EnsureCopyFiles(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureCopyFiles(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -86,9 +86,9 @@ func (p *Provider) EnsureCopyFiles(ctx context.Context, machine *platformv1.Mach
 	return nil
 }
 
-func (p *Provider) EnsurePreInstallHook(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsurePreInstallHook(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 
-	mc := []platformv1.ClusterMachine{
+	mc := []platformv2.ClusterMachine{
 		{
 			IP:       machine.Spec.IP,
 			Port:     machine.Spec.Port,
@@ -96,12 +96,12 @@ func (p *Provider) EnsurePreInstallHook(ctx context.Context, machine *platformv1
 			Password: machine.Spec.Password,
 		},
 	}
-	return util.ExcuteCustomizedHook(ctx, cluster, platformv1.HookPreInstall, mc)
+	return util.ExcuteCustomizedHook(ctx, cluster, platformv2.HookPreInstall, mc)
 }
 
-func (p *Provider) EnsurePostInstallHook(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsurePostInstallHook(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 
-	mc := []platformv1.ClusterMachine{
+	mc := []platformv2.ClusterMachine{
 		{
 			IP:       machine.Spec.IP,
 			Port:     machine.Spec.Port,
@@ -109,10 +109,10 @@ func (p *Provider) EnsurePostInstallHook(ctx context.Context, machine *platformv
 			Password: machine.Spec.Password,
 		},
 	}
-	return util.ExcuteCustomizedHook(ctx, cluster, platformv1.HookPostInstall, mc)
+	return util.ExcuteCustomizedHook(ctx, cluster, platformv2.HookPostInstall, mc)
 }
 
-func (p *Provider) EnsureClean(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureClean(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -126,7 +126,7 @@ func (p *Provider) EnsureClean(ctx context.Context, machine *platformv1.Machine,
 	return nil
 }
 
-func (p *Provider) EnsurePreflight(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsurePreflight(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func (p *Provider) EnsurePreflight(ctx context.Context, machine *platformv1.Mach
 	return nil
 }
 
-func (p *Provider) EnsureRegistryHosts(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureRegistryHosts(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -168,7 +168,7 @@ func (p *Provider) EnsureRegistryHosts(ctx context.Context, machine *platformv1.
 	return nil
 }
 
-func (p *Provider) EnsureKernelModule(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureKernelModule(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	s, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func (p *Provider) EnsureKernelModule(ctx context.Context, machine *platformv1.M
 	return nil
 }
 
-func (p *Provider) EnsureSysctl(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureSysctl(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -225,7 +225,7 @@ func (p *Provider) EnsureSysctl(ctx context.Context, machine *platformv1.Machine
 	return nil
 }
 
-func (p *Provider) EnsureDisableSwap(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureDisableSwap(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -239,7 +239,7 @@ func (p *Provider) EnsureDisableSwap(ctx context.Context, machine *platformv1.Ma
 	return nil
 }
 
-func (p *Provider) EnsureManifestDir(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureManifestDir(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -252,7 +252,7 @@ func (p *Provider) EnsureManifestDir(ctx context.Context, machine *platformv1.Ma
 	return nil
 }
 
-func (p *Provider) EnsureKubeconfig(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureKubeconfig(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	masterEndpoint, err := util.GetMasterEndpoint(cluster.Status.Addresses)
 	if err != nil {
 		return err
@@ -277,7 +277,7 @@ func (p *Provider) EnsureKubeconfig(ctx context.Context, machine *platformv1.Mac
 	return nil
 }
 
-func (p *Provider) EnsureNvidiaDriver(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureNvidiaDriver(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	if !gpu.IsEnable(machine.Spec.Labels) {
 		return nil
 	}
@@ -290,7 +290,7 @@ func (p *Provider) EnsureNvidiaDriver(ctx context.Context, machine *platformv1.M
 	return gpu.InstallNvidiaDriver(machineSSH, &gpu.NvidiaDriverOption{})
 }
 
-func (p *Provider) EnsureNvidiaContainerRuntime(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureNvidiaContainerRuntime(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	if !gpu.IsEnable(machine.Spec.Labels) {
 		return nil
 	}
@@ -303,14 +303,14 @@ func (p *Provider) EnsureNvidiaContainerRuntime(ctx context.Context, machine *pl
 	return gpu.InstallNvidiaContainerRuntime(machineSSH, &gpu.NvidiaContainerRuntimeOption{})
 }
 
-func (p *Provider) EnsureContainerRuntime(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
-	if cluster.Cluster.Spec.Features.ContainerRuntime == platformv1.Docker {
+func (p *Provider) EnsureContainerRuntime(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
+	if cluster.Cluster.Spec.Features.ContainerRuntime == platformv2.Docker {
 		return p.EnsureDocker(ctx, machine, cluster)
 	}
 	return p.EnsureContainerd(ctx, machine, cluster)
 }
 
-func (p *Provider) EnsureKubernetesImages(ctx context.Context, machine *platformv1.Machine, c *typesv1.Cluster) error {
+func (p *Provider) EnsureKubernetesImages(ctx context.Context, machine *platformv2.Machine, c *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -324,7 +324,7 @@ func (p *Provider) EnsureKubernetesImages(ctx context.Context, machine *platform
 	return nil
 }
 
-func (p *Provider) EnsureContainerd(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureContainerd(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -350,7 +350,7 @@ func (p *Provider) EnsureContainerd(ctx context.Context, machine *platformv1.Mac
 	return nil
 }
 
-func (p *Provider) EnsureDocker(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureDocker(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -361,7 +361,7 @@ func (p *Provider) EnsureDocker(ctx context.Context, machine *platformv1.Machine
 		insecureRegistries = fmt.Sprintf(`%s,"%s"`, insecureRegistries, machine.Spec.TenantID+"."+p.config.Registry.Domain)
 	}
 
-	extraArgs := cluster.Spec.DockerExtraArgs
+	extraArgs := cluster.Spec.Docker.ExtraArgs
 	utilruntime.Must(mergo.Merge(&extraArgs, p.config.Docker.ExtraArgs))
 	option := &docker.Option{
 		InsecureRegistries: insecureRegistries,
@@ -377,7 +377,7 @@ func (p *Provider) EnsureDocker(ctx context.Context, machine *platformv1.Machine
 	return nil
 }
 
-func (p *Provider) EnsureKubelet(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureKubelet(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -391,7 +391,7 @@ func (p *Provider) EnsureKubelet(ctx context.Context, machine *platformv1.Machin
 	return nil
 }
 
-func (p *Provider) EnsureCNIPlugins(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureCNIPlugins(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -405,7 +405,7 @@ func (p *Provider) EnsureCNIPlugins(ctx context.Context, machine *platformv1.Mac
 	return nil
 }
 
-func (p *Provider) EnsureConntrackTools(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureConntrackTools(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -419,7 +419,7 @@ func (p *Provider) EnsureConntrackTools(ctx context.Context, machine *platformv1
 	return nil
 }
 
-func (p *Provider) EnsureKubeadm(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureKubeadm(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -437,7 +437,7 @@ func (p *Provider) EnsureKubeadm(ctx context.Context, machine *platformv1.Machin
 	return nil
 }
 
-func (p *Provider) EnsureJoinPhasePreflight(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureJoinPhasePreflight(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -451,7 +451,7 @@ func (p *Provider) EnsureJoinPhasePreflight(ctx context.Context, machine *platfo
 	return nil
 }
 
-func (p *Provider) EnsureJoinPhaseKubeletStart(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureJoinPhaseKubeletStart(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err
@@ -464,7 +464,7 @@ func (p *Provider) EnsureJoinPhaseKubeletStart(ctx context.Context, machine *pla
 	return nil
 }
 
-func (p *Provider) EnsureMarkNode(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureMarkNode(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	clientset, err := cluster.Clientset()
 	if err != nil {
 		return err
@@ -481,7 +481,7 @@ func (p *Provider) EnsureMarkNode(ctx context.Context, machine *platformv1.Machi
 	return nil
 }
 
-func (p *Provider) EnsureNodeReady(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureNodeReady(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	clientset, err := cluster.Clientset()
 	if err != nil {
 		return err
@@ -503,7 +503,7 @@ func (p *Provider) EnsureNodeReady(ctx context.Context, machine *platformv1.Mach
 	})
 }
 
-func (p *Provider) EnsureInitAPIServerHost(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureInitAPIServerHost(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	machineSSH, err := machine.Spec.SSH()
 	if err != nil {
 		return err

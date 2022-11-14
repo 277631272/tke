@@ -21,30 +21,30 @@ package vendor
 import (
 	"strings"
 
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 )
 
 // GetKubeVendor get k8s vendor from k8s version
 // ref https://github.com/open-cluster-management/multicloud-operators-foundation/blob/e94b719de6d5f3541e948dd70ad8f1ff748aa452/pkg/klusterlet/clusterinfo/clusterinfo_controller.go#L326
-func GetKubeVendor(version string) (kubeVendor platformv1.KubeVendorType) {
+func GetKubeVendor(version string) (kubeVendor platformv2.KubeVendorType) {
 	version = strings.ToUpper(version)
 	switch {
-	case strings.Contains(version, string(platformv1.KubeVendorTKE)):
-		kubeVendor = platformv1.KubeVendorTKE
+	case strings.Contains(version, string(platformv2.KubeVendorTKE)):
+		kubeVendor = platformv2.KubeVendorTKE
 		return
-	case strings.Contains(version, string(platformv1.KubeVendorIKS)):
-		kubeVendor = platformv1.KubeVendorIKS
+	case strings.Contains(version, string(platformv2.KubeVendorIKS)):
+		kubeVendor = platformv2.KubeVendorIKS
 		return
-	case strings.Contains(version, string(platformv1.KubeVendorEKS)):
-		kubeVendor = platformv1.KubeVendorEKS
+	case strings.Contains(version, string(platformv2.KubeVendorEKS)):
+		kubeVendor = platformv2.KubeVendorEKS
 		return
-	case strings.Contains(version, string(platformv1.KubeVendorGKE)):
-		kubeVendor = platformv1.KubeVendorGKE
+	case strings.Contains(version, string(platformv2.KubeVendorGKE)):
+		kubeVendor = platformv2.KubeVendorGKE
 		return
-	case strings.Contains(version, string(platformv1.KubeVendorICP)):
-		kubeVendor = platformv1.KubeVendorICP
+	case strings.Contains(version, string(platformv2.KubeVendorICP)):
+		kubeVendor = platformv2.KubeVendorICP
 	default:
-		kubeVendor = platformv1.KubeVendorOther
+		kubeVendor = platformv2.KubeVendorOther
 	}
 	return
 }

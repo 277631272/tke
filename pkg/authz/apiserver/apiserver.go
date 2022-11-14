@@ -23,7 +23,7 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	authzv1 "tkestack.io/tke/api/authz/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/pkg/apiserver/storage"
 	authzrest "tkestack.io/tke/pkg/authz/registry/rest"
@@ -36,7 +36,7 @@ type ExtraConfig struct {
 	APIResourceConfigSource serverstorage.APIResourceConfigSource
 	StorageFactory          serverstorage.StorageFactory
 	VersionedInformers      versionedinformers.SharedInformerFactory
-	PlatformClient          platformversionedclient.PlatformV1Interface
+	PlatformClient          platformversionedclient.PlatformV2Interface
 }
 
 // Config contains the core configuration instance of apiserver and

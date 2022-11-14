@@ -9,8 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	platformv1 "tkestack.io/tke/api/platform/v1"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
+	platformv1 "tkestack.io/tke/api/platform/v2"
+	typesv1 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/apiclient"
 	"tkestack.io/tke/pkg/util/log"
 )

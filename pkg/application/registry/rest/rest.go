@@ -28,7 +28,7 @@ import (
 	"tkestack.io/tke/api/application"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	applicationinternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/application/internalversion"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	registryversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/registry/v1"
 	"tkestack.io/tke/pkg/apiserver/storage"
 	appconfig "tkestack.io/tke/pkg/application/config"
@@ -40,7 +40,7 @@ import (
 // RestStorageProvider interface
 type StorageProvider struct {
 	LoopbackClientConfig *restclient.Config
-	PlatformClient       platformversionedclient.PlatformV1Interface
+	PlatformClient       platformversionedclient.PlatformV2Interface
 	RegistryClient       registryversionedclient.RegistryV1Interface
 	Authorizer           authorizer.Authorizer
 	RepoConfiguration    appconfig.RepoConfiguration

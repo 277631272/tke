@@ -34,6 +34,7 @@ import (
 	monitorv1 "tkestack.io/tke/api/monitor/v1"
 	notifyv1 "tkestack.io/tke/api/notify/v1"
 	platformv1 "tkestack.io/tke/api/platform/v1"
+	v2 "tkestack.io/tke/api/platform/v2"
 	registryv1 "tkestack.io/tke/api/registry/v1"
 )
 
@@ -180,6 +181,26 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V1().Registries().Informer()}, nil
 	case platformv1.SchemeGroupVersion.WithResource("tappcontrollers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V1().TappControllers().Informer()}, nil
+
+		// Group=platform.tkestack.io, Version=v2
+	case v2.SchemeGroupVersion.WithResource("csioperators"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().CSIOperators().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("clusters"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().Clusters().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("clustercredentials"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().ClusterCredentials().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("configmaps"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().ConfigMaps().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("cronhpas"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().CronHPAs().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("machines"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().Machines().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("persistentevents"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().PersistentEvents().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("registries"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().Registries().Informer()}, nil
+	case v2.SchemeGroupVersion.WithResource("tappcontrollers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Platform().V2().TappControllers().Informer()}, nil
 
 		// Group=registry.tkestack.io, Version=v1
 	case registryv1.SchemeGroupVersion.WithResource("charts"):

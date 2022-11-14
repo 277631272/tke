@@ -47,7 +47,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	platforminternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	"tkestack.io/tke/pkg/platform/util"
 )
@@ -93,8 +93,8 @@ func (r *TappControllerREST) Connect(ctx context.Context, clusterName string, op
 	}
 	proxyOpts := opts.(*platform.TappControllerProxyOptions)
 
-	clusterv1 := &platformv1.Cluster{}
-	err = platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, clusterv1, nil)
+	clusterv1 := &platformv2.Cluster{}
+	err = platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, clusterv1, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -278,12 +278,12 @@ func (h *tappControllerProxyHandler) getEventList(ctx context.Context) (*corev1.
 }
 
 func getTapp(ctx context.Context, cluster *platform.Cluster, restConfig *restclient.Config, namespace, name string) (*util.CustomResource, error) {
-	var clusterv1 platformv1.Cluster
-	if err := platformv1.Convert_platform_Cluster_To_v1_Cluster(cluster, &clusterv1, nil); err != nil {
+	var clusterv2 platformv2.Cluster
+	if err := platformv2.Convert_platform_Cluster_To_v2_Cluster(cluster, &clusterv2, nil); err != nil {
 		return nil, err
 	}
-	if *clusterv1.Status.Locked {
-		return nil, fmt.Errorf("cluster %s has been locked", clusterv1.ObjectMeta.Name)
+	if *clusterv2.Status.Locked {
+		return nil, fmt.Errorf("cluster %s has been locked", clusterv2.ObjectMeta.Name)
 	}
 	dynamicclient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {

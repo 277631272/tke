@@ -20,6 +20,9 @@ package options
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	v2 "tkestack.io/tke/api/platform/v2"
 
 	"github.com/spf13/pflag"
 	genericapiserveroptions "k8s.io/apiserver/pkg/server/options"
@@ -44,7 +47,7 @@ type Options struct {
 
 // NewOptions creates a new Options with a default config.
 func NewOptions(serverName string) *Options {
-	return &Options{
+	o := &Options{
 		Log:            log.NewOptions(),
 		SecureServing:  apiserveroptions.NewSecureServingOptions(serverName, 9443),
 		Debug:          apiserveroptions.NewDebugOptions(),
@@ -55,6 +58,8 @@ func NewOptions(serverName string) *Options {
 		Audit:          genericapiserveroptions.NewAuditOptions(),
 		FeatureOptions: NewFeatureOptions(),
 	}
+	o.ETCD.EncodeVersioner = runtime.NewMultiGroupVersioner(v2.SchemeGroupVersion, schema.GroupKind{Group: v2.GroupName})
+	return o
 }
 
 // AddFlags adds flags for a specific server to the specified FlagSet object.

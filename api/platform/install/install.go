@@ -23,6 +23,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"tkestack.io/tke/api/platform"
 	"tkestack.io/tke/api/platform/v1"
+	"tkestack.io/tke/api/platform/v2"
 )
 
 func init() {
@@ -33,5 +34,6 @@ func init() {
 func Install(scheme *runtime.Scheme) {
 	runtimeutil.Must(platform.AddToScheme(scheme))
 	runtimeutil.Must(v1.AddToScheme(scheme))
-	runtimeutil.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion))
+	runtimeutil.Must(v2.AddToScheme(scheme))
+	runtimeutil.Must(scheme.SetVersionPriority(v2.SchemeGroupVersion, v1.SchemeGroupVersion))
 }

@@ -20,13 +20,13 @@ package route
 
 import (
 	"github.com/emicklei/go-restful"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/monitor/services"
 )
 
 // MonitorResource represents the REST resource of monitor.
 type MonitorResource struct {
-	PlatformClient platformversionedclient.PlatformV1Interface
+	PlatformClient platformversionedclient.PlatformV2Interface
 	RulesOperator  services.BackendConfigProcessor
 }
 

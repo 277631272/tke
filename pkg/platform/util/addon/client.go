@@ -31,15 +31,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kubeaggregatorclientset "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/api/platform"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/util"
 )
 
 // BuildExternalMonitoringClientSetNoStatus creates the monitoring clientset of prometheus operator by given
 // cluster object and returns it.
-func BuildExternalMonitoringClientSetNoStatus(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (monitoringclient.Interface, error) {
+func BuildExternalMonitoringClientSetNoStatus(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (monitoringclient.Interface, error) {
 	credential, err := GetClusterCredentialV1(ctx, client, cluster)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func BuildExternalMonitoringClientSetNoStatus(ctx context.Context, cluster *plat
 
 // BuildExternalMonitoringClientSet creates the monitoring clientset of  prometheus operator by given cluster
 // object and returns it.
-func BuildExternalMonitoringClientSet(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (monitoringclient.Interface, error) {
+func BuildExternalMonitoringClientSet(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (monitoringclient.Interface, error) {
 	if cluster.Status.Locked != nil && *cluster.Status.Locked {
 		return nil, fmt.Errorf("cluster %s has been locked", cluster.ObjectMeta.Name)
 	}
@@ -60,7 +60,7 @@ func BuildExternalMonitoringClientSet(ctx context.Context, cluster *platformv1.C
 
 // BuildExternalMonitoringClientSetWithName creates the clientset of prometheus operator by given cluster
 // name and returns it.
-func BuildExternalMonitoringClientSetWithName(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, name string) (monitoringclient.Interface, error) {
+func BuildExternalMonitoringClientSetWithName(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, name string) (monitoringclient.Interface, error) {
 	cluster, err := platformClient.Clusters().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func BuildExternalMonitoringClientSetWithName(ctx context.Context, platformClien
 
 // BuildKubeAggregatorClientSet creates the kube-aggregator clientset of kubernetes by given cluster
 // object and returns it.
-func BuildKubeAggregatorClientSet(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (*kubeaggregatorclientset.Clientset, error) {
+func BuildKubeAggregatorClientSet(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (*kubeaggregatorclientset.Clientset, error) {
 	if cluster.Status.Locked != nil && *cluster.Status.Locked {
 		return nil, fmt.Errorf("cluster %s has been locked", cluster.ObjectMeta.Name)
 	}
@@ -84,7 +84,7 @@ func BuildKubeAggregatorClientSet(ctx context.Context, cluster *platformv1.Clust
 
 // BuildExternalExtensionClientSetNoStatus creates the api extension clientset of kubernetes by given
 // cluster object and returns it.
-func BuildExternalExtensionClientSetNoStatus(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (*apiextensionsclient.Clientset, error) {
+func BuildExternalExtensionClientSetNoStatus(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (*apiextensionsclient.Clientset, error) {
 	credential, err := GetClusterCredentialV1(ctx, client, cluster)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func BuildExternalExtensionClientSetNoStatus(ctx context.Context, cluster *platf
 
 // BuildExternalExtensionClientSet creates the api extension clientset of kubernetes by given cluster
 // object and returns it.
-func BuildExternalExtensionClientSet(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (*apiextensionsclient.Clientset, error) {
+func BuildExternalExtensionClientSet(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (*apiextensionsclient.Clientset, error) {
 	if cluster.Status.Locked != nil && *cluster.Status.Locked {
 		return nil, fmt.Errorf("cluster %s has been locked", cluster.ObjectMeta.Name)
 	}
@@ -105,7 +105,7 @@ func BuildExternalExtensionClientSet(ctx context.Context, cluster *platformv1.Cl
 
 // BuildKubeAggregatorClientSetNoStatus creates the kube-aggregator clientset of kubernetes by given
 // cluster object and returns it.
-func BuildKubeAggregatorClientSetNoStatus(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (*kubeaggregatorclientset.Clientset, error) {
+func BuildKubeAggregatorClientSetNoStatus(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (*kubeaggregatorclientset.Clientset, error) {
 	credential, err := GetClusterCredentialV1(ctx, client, cluster)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func BuildKubeAggregatorClientSetNoStatus(ctx context.Context, cluster *platform
 
 // BuildExternalClientSetWithName creates the clientset of kubernetes by given cluster
 // name and returns it.
-func BuildExternalClientSetWithName(ctx context.Context, platformClient platformversionedclient.PlatformV1Interface, name string) (*kubernetes.Clientset, error) {
+func BuildExternalClientSetWithName(ctx context.Context, platformClient platformversionedclient.PlatformV2Interface, name string) (*kubernetes.Clientset, error) {
 	cluster, err := platformClient.Clusters().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func BuildExternalClientSetWithName(ctx context.Context, platformClient platform
 }
 
 // BuildExternalClientSet creates the clientset of kubernetes by given cluster object and returns it.
-func BuildExternalClientSet(ctx context.Context, cluster *platformv1.Cluster, client platformversionedclient.PlatformV1Interface) (*kubernetes.Clientset, error) {
+func BuildExternalClientSet(ctx context.Context, cluster *platformv2.Cluster, client platformversionedclient.PlatformV2Interface) (*kubernetes.Clientset, error) {
 	credential, err := GetClusterCredentialV1(ctx, client, cluster)
 	if err != nil {
 		return nil, err
@@ -143,9 +143,9 @@ func BuildExternalClientSet(ctx context.Context, cluster *platformv1.Cluster, cl
 }
 
 // GetClusterCredentialV1 returns the versioned cluster's credential
-func GetClusterCredentialV1(ctx context.Context, client platformversionedclient.PlatformV1Interface, cluster *platformv1.Cluster) (*platformv1.ClusterCredential, error) {
+func GetClusterCredentialV1(ctx context.Context, client platformversionedclient.PlatformV2Interface, cluster *platformv2.Cluster) (*platformv2.ClusterCredential, error) {
 	var (
-		credential *platformv1.ClusterCredential
+		credential *platformv2.ClusterCredential
 		err        error
 	)
 

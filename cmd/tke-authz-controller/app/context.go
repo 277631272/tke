@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
-	platformv1 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2 "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	"tkestack.io/tke/cmd/tke-authz-controller/app/config"
 	"tkestack.io/tke/pkg/controller"
@@ -73,7 +73,7 @@ type ControllerContext struct {
 	ResyncPeriod            func() time.Duration
 	ControllerStartInterval time.Duration
 
-	PlatformClient platformv1.PlatformV1Interface
+	PlatformClient platformv2.PlatformV2Interface
 }
 
 // IsControllerEnabled returns whether the controller has been enabled
@@ -122,7 +122,7 @@ func CreateControllerContext(cfg *config.Config, rootClientBuilder controller.Cl
 		InformersStarted:        make(chan struct{}),
 		ResyncPeriod:            controller.ResyncPeriod(&cfg.Component),
 		ControllerStartInterval: cfg.Component.ControllerStartInterval,
-		PlatformClient:          platformClient.PlatformV1(),
+		PlatformClient:          platformClient.PlatformV2(),
 	}
 
 	return ctx, nil

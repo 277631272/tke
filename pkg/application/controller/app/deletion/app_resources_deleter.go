@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	applicationv1 "tkestack.io/tke/api/application/v1"
 	v1clientset "tkestack.io/tke/api/client/clientset/versioned/typed/application/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	appconfig "tkestack.io/tke/pkg/application/config"
 	"tkestack.io/tke/pkg/application/controller/app/action"
 	"tkestack.io/tke/pkg/util/log"
@@ -47,7 +47,7 @@ type AppResourcesDeleterInterface interface {
 // applicationClient and configure.
 func NewAppResourcesDeleter(
 	applicationClient v1clientset.ApplicationV1Interface,
-	platformClient platformversionedclient.PlatformV1Interface,
+	platformClient platformversionedclient.PlatformV2Interface,
 	repo appconfig.RepoConfiguration,
 	finalizerToken applicationv1.FinalizerName,
 	deleteAppWhenDone bool) AppResourcesDeleterInterface {
@@ -68,7 +68,7 @@ type applicationResourcesDeleter struct {
 	// Client to manipulate the application.
 	applicationClient v1clientset.ApplicationV1Interface
 	// Client to manipulate the platform.
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	// The finalizer token that should be removed from the app
 	// when all resources in that app have been deleted.
 	finalizerToken applicationv1.FinalizerName
@@ -80,10 +80,11 @@ type applicationResourcesDeleter struct {
 
 // Delete deletes all resources in the given app.
 // Before deleting resources:
-// * It ensures that deletion timestamp is set on the
-//   app (does nothing if deletion timestamp is missing).
-// * Verifies that the app is in the "terminating" phase
-//   (updates the app phase if it is not yet marked terminating)
+//   - It ensures that deletion timestamp is set on the
+//     app (does nothing if deletion timestamp is missing).
+//   - Verifies that the app is in the "terminating" phase
+//     (updates the app phase if it is not yet marked terminating)
+//
 // After deleting the resources:
 // * It removes finalizer token from the given app.
 // * Deletes the app if deleteAppWhenDone is true.

@@ -35,6 +35,7 @@ import (
 	monitorv1 "tkestack.io/tke/api/monitor/v1"
 	notifyv1 "tkestack.io/tke/api/notify/v1"
 	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	registryv1 "tkestack.io/tke/api/registry/v1"
 )
 
@@ -51,6 +52,7 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	monitorv1.AddToScheme,
 	notifyv1.AddToScheme,
 	platformv1.AddToScheme,
+	platformv2.AddToScheme,
 	registryv1.AddToScheme,
 }
 

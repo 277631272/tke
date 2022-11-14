@@ -53,6 +53,7 @@ import (
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/cmd/tke-platform-api/app/options"
 	"tkestack.io/tke/pkg/apiserver/storage"
 	admissionrest "tkestack.io/tke/pkg/platform/proxy/admissionregistration/rest"
@@ -198,7 +199,7 @@ func (m *APIServer) InstallAPIs(apiResourceConfigSource serverstorage.APIResourc
 			log.Warnf("Problem initializing API group %q, skipping.", groupName)
 			continue
 		}
-		log.Infof("Enabling API group %q.", groupName)
+		log.Infof("tkestack, Enabling API group %q, prioritizedVersions: %v", groupName, apiGroupInfo.PrioritizedVersions)
 
 		if postHookProvider, ok := restStorageBuilder.(genericapiserver.PostStartHookProvider); ok {
 			name, hook, err := postHookProvider.PostStartHook()
@@ -266,6 +267,7 @@ func DefaultAPIResourceConfigSource() *serverstorage.ResourceConfig {
 		storagev1beta1.SchemeGroupVersion,
 
 		platformv1.SchemeGroupVersion,
+		platformv2.SchemeGroupVersion,
 	)
 	return ret
 }

@@ -35,17 +35,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	certutil "k8s.io/client-go/util/cert"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	kubeadmv1beta2 "tkestack.io/tke/pkg/platform/provider/baremetal/apis/kubeadm/v1beta2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/images"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/kubeadm"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/util"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/log"
 )
 
-func (p *Provider) EnsureRenewCerts(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureRenewCerts(ctx context.Context, c *v2.Cluster) error {
 	for _, machine := range c.Spec.Machines {
 		logger := log.FromContext(ctx).WithValues("node", machine.IP)
 		s, err := machine.SSH()
@@ -83,7 +83,7 @@ func (p *Provider) EnsureRenewCerts(ctx context.Context, c *v1.Cluster) error {
 	return nil
 }
 
-func (p *Provider) EnsureAPIServerCert(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureAPIServerCert(ctx context.Context, c *v2.Cluster) error {
 	kubeadmConfig := p.getKubeadmInitConfig(c)
 	exptectCertSANs := GetAPIServerCertSANs(c.Cluster)
 
@@ -146,11 +146,11 @@ func (p *Provider) EnsureAPIServerCert(ctx context.Context, c *v1.Cluster) error
 	return nil
 }
 
-func (p *Provider) EnsurePreClusterUpgradeHook(ctx context.Context, c *v1.Cluster) error {
-	return util.ExcuteCustomizedHook(ctx, c, platformv1.HookPreClusterUpgrade, c.Spec.Machines[:1])
+func (p *Provider) EnsurePreClusterUpgradeHook(ctx context.Context, c *v2.Cluster) error {
+	return util.ExcuteCustomizedHook(ctx, c, platformv2.HookPreClusterUpgrade, c.Spec.Machines[:1])
 }
 
-func (p *Provider) EnsureUpgradeCoreDNS(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureUpgradeCoreDNS(ctx context.Context, c *v2.Cluster) error {
 	logger := log.FromContext(ctx).WithName("Upgrade coreDNS")
 	if p.needSetCoreDNS(c.Spec.Version) {
 		client, err := c.Clientset()
@@ -193,7 +193,7 @@ func updateCoreDNSVersion(ctx context.Context, client kubernetes.Interface, vers
 	return err
 }
 
-func (p *Provider) EnsureUpgradeControlPlaneNode(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureUpgradeControlPlaneNode(ctx context.Context, c *v2.Cluster) error {
 	// check all machines are upgraded before upgrade cluster
 	requirement, err := labels.NewRequirement(constants.LabelNodeNeedUpgrade, selection.Exists, []string{})
 	if err != nil {
@@ -201,7 +201,7 @@ func (p *Provider) EnsureUpgradeControlPlaneNode(ctx context.Context, c *v1.Clus
 	}
 	machines, err := p.PlatformClient.Machines().List(context.TODO(), metav1.ListOptions{
 		LabelSelector: requirement.String(),
-		FieldSelector: fields.OneTermEqualSelector(platformv1.MachineClusterField, c.Name).String(),
+		FieldSelector: fields.OneTermEqualSelector(platformv2.MachineClusterField, c.Name).String(),
 	})
 	if err != nil {
 		return err
@@ -240,7 +240,7 @@ func (p *Provider) EnsureUpgradeControlPlaneNode(ctx context.Context, c *v1.Clus
 
 		if i == len(c.Spec.Machines)-1 && upgraded {
 			var labelValue string
-			if c.Spec.Features.Upgrade.Mode == platformv1.UpgradeModeAuto {
+			if c.Spec.Features.Upgrade.Mode == platformv2.UpgradeModeAuto {
 				// set willUpgrade value to all worker node when upgraded all master nodes and upgrade mode is auto.
 				labelValue = kubeadm.WillUpgrade
 			}
@@ -256,7 +256,7 @@ func (p *Provider) EnsureUpgradeControlPlaneNode(ctx context.Context, c *v1.Clus
 	return nil
 }
 
-func (p *Provider) EnsurePostClusterUpgradeHook(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsurePostClusterUpgradeHook(ctx context.Context, c *v2.Cluster) error {
 
-	return util.ExcuteCustomizedHook(ctx, c, platformv1.HookPostClusterUpgrade, c.Spec.Machines[:1])
+	return util.ExcuteCustomizedHook(ctx, c, platformv2.HookPostClusterUpgrade, c.Spec.Machines[:1])
 }

@@ -162,18 +162,7 @@ type ClusterSpec struct {
 	DisplayName string
 	Type        string
 	Version     string
-	// +optional
-	NetworkType NetworkType
-	// +optional
-	NetworkDevice string
-	// +optional
-	ClusterCIDR string
-	// ServiceCIDR is used to set a separated CIDR for k8s service, it's exclusive with MaxClusterServiceNum.
-	// +optional
-	ServiceCIDR *string
-	// +optional
-	// DNSDomain is the dns domain used by k8s services. Defaults to "cluster.local".
-	DNSDomain string
+
 	// +optional
 	PublicAlternativeNames []string
 	// +optional
@@ -182,18 +171,6 @@ type ClusterSpec struct {
 	Properties ClusterProperty
 	// +optional
 	Machines []ClusterMachine
-	// +optional
-	ScalingMachines []ClusterMachine
-	// +optional
-	DockerExtraArgs map[string]string
-	// +optional
-	KubeletExtraArgs map[string]string
-	// +optional
-	APIServerExtraArgs map[string]string
-	// +optional
-	ControllerManagerExtraArgs map[string]string
-	// +optional
-	SchedulerExtraArgs map[string]string
 
 	// ClusterCredentialRef for isolate sensitive information.
 	// If not specified, cluster controller will create one;
@@ -204,17 +181,104 @@ type ClusterSpec struct {
 	// Etcd holds configuration for etcd.
 	// +optional
 	Etcd *Etcd
+
 	// If true will use hostname as nodename, if false will use machine IP as nodename.
 	// +optional
 	HostnameAsNodename bool
 	// +optional
-	NetworkArgs map[string]string
+	ScalingMachines []ClusterMachine
+
 	// BootstrapApps will install apps during creating cluster
 	// +optional
 	BootstrapApps BootstrapApps
+
 	// AppVersion is the overall version of system components
 	// +optional
 	AppVersion string
+
+	// Networking holds configuration for the networking topology of the cluster.
+	// +optional
+	Networking *Networking
+
+	// APIServer contains extra settings for the API server control plane component
+	// +optional
+	APIServer *APIServer
+
+	// ControllerManager contains extra settings for the controller manager control plane component
+	// +optional
+	ControllerManager *ControllerManager
+
+	// Scheduler contains extra settings for the scheduler control plane component
+	// +optional
+	Scheduler *Scheduler
+
+	// DockerInfo holds settings necessary for Docker in the cluster
+	// +optional
+	Docker *DockerInfo
+
+	// Kubelet holds settings necessary for Kubelet in the cluster
+	// +optional
+	Kubelet *Kubelet
+}
+
+// ControlPlaneComponent holds settings common to control plane component of the cluster
+type ControlPlaneComponent struct {
+	// +optional
+	ExtraArgs map[string]string
+}
+
+// APIServer holds settings necessary for API server deployments in the cluster
+type APIServer struct {
+	ControlPlaneComponent
+}
+
+// ControllerManager holds settings necessary for ControllerManager deployments in the cluster
+type ControllerManager struct {
+	ControlPlaneComponent
+}
+
+// Scheduler holds settings necessary for Scheduler deployments in the cluster
+type Scheduler struct {
+	ControlPlaneComponent
+}
+
+// DockerInfo holds settings necessary for Docker in the cluster
+type DockerInfo struct {
+	// +optional
+	ExtraArgs      map[string]string
+	Os             string
+	Runtime        string
+	RuntimeVersion string
+}
+
+// Kubelet holds settings necessary for Kubelet in the cluster
+type Kubelet struct {
+	// +optional
+	ExtraArgs map[string]string
+}
+
+// NetworkConfig contains elements describing cluster's networking configuration.
+type Networking struct {
+	// +optional
+	NetworkType NetworkType
+	// +optional
+	NetworkDevice string
+	// +optional
+	ClusterCIDR string
+	// ServiceCIDR is used to set a separated CIDR for k8s service, it's exclusive with MaxClusterServiceNum.
+	// +optional
+	ServiceCIDR string
+	// +optional
+	EniSubnetIds []string
+	// +optional
+	EniRecyclePeriod *int64
+	// DNSDomain is the dns domain used by k8s services. Defaults to "cluster.local".
+	// +optional
+	DNSDomain string
+	// +optional
+	NetworkArgs map[string]string
+	// +optional
+	KubeProxyMode string
 }
 
 // ClusterStatus represents information about the status of a cluster.
@@ -553,6 +617,9 @@ type ClusterFeature struct {
 	// Upgrade control upgrade process.
 	// +optional
 	Upgrade Upgrade
+	// FeatureGates enabled by the user.
+	// +optional
+	FeatureGates map[string]bool
 }
 
 type BootstrapApps []BootstapApp
@@ -632,6 +699,8 @@ type ClusterProperty struct {
 	MaxNodePodNum *int32
 	// +optional
 	OversoldRatio map[string]string
+	// +optional
+	Propertys map[string]string
 }
 
 // Etcd contains elements describing Etcd configuration.

@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/clientcmd"
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
 	"tkestack.io/tke/pkg/platform/provider/imported/config"
@@ -70,7 +70,7 @@ func NewProvider() (*Provider, error) {
 		if err != nil {
 			log.Errorf("read PlatformAPIClientConfig error: %w", err)
 		} else {
-			p.PlatformClient, err = platformv1client.NewForConfig(restConfig)
+			p.PlatformClient, err = platformv2client.NewForConfig(restConfig)
 			if err != nil {
 				return nil, err
 			}

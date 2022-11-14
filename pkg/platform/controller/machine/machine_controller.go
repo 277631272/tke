@@ -33,10 +33,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
-	platformv1informer "tkestack.io/tke/api/client/informers/externalversions/platform/v1"
-	platformv1lister "tkestack.io/tke/api/client/listers/platform/v1"
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
+	platformv2informer "tkestack.io/tke/api/client/informers/externalversions/platform/v2"
+	platformv2lister "tkestack.io/tke/api/client/listers/platform/v2"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	machineconfig "tkestack.io/tke/pkg/platform/controller/machine/config"
 	"tkestack.io/tke/pkg/platform/controller/machine/deletion"
 	clusterprovider "tkestack.io/tke/pkg/platform/provider/cluster"
@@ -52,20 +52,20 @@ const (
 // Controller is responsible for performing actions dependent upon a machine phase.
 type Controller struct {
 	queue        workqueue.RateLimitingInterface
-	lister       platformv1lister.MachineLister
+	lister       platformv2lister.MachineLister
 	listerSynced cache.InformerSynced
 
 	log            log.Logger
-	platformClient platformversionedclient.PlatformV1Interface
+	platformClient platformversionedclient.PlatformV2Interface
 	deleter        deletion.MachineDeleterInterface
 }
 
 // NewController creates a new Controller object.
 func NewController(
-	platformclient platformversionedclient.PlatformV1Interface,
-	machineInformer platformv1informer.MachineInformer,
+	platformclient platformversionedclient.PlatformV2Interface,
+	machineInformer platformv2informer.MachineInformer,
 	configuration machineconfig.MachineControllerConfiguration,
-	finalizerToken platformv1.FinalizerName) *Controller {
+	finalizerToken platformv2.FinalizerName) *Controller {
 	rateLimit := workqueue.NewMaxOfRateLimiter(
 		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
 		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(configuration.BucketRateLimiterLimit), configuration.BucketRateLimiterBurst)},
@@ -96,14 +96,14 @@ func NewController(
 }
 
 func (c *Controller) addMachine(obj interface{}) {
-	machine := obj.(*platformv1.Machine)
+	machine := obj.(*platformv2.Machine)
 	c.log.Info("Adding machine", "machine", machine.Name)
 	c.enqueue(machine)
 }
 
 func (c *Controller) updateMachine(old, obj interface{}) {
-	oldMachine := old.(*platformv1.Machine)
-	machine := obj.(*platformv1.Machine)
+	oldMachine := old.(*platformv2.Machine)
+	machine := obj.(*platformv2.Machine)
 
 	controllerNeedUpddateResult := c.needsUpdate(oldMachine, machine)
 	var providerNeedUpddateResult bool
@@ -118,7 +118,7 @@ func (c *Controller) updateMachine(old, obj interface{}) {
 	c.enqueue(machine)
 }
 
-func (c *Controller) needsUpdate(old *platformv1.Machine, new *platformv1.Machine) bool {
+func (c *Controller) needsUpdate(old *platformv2.Machine, new *platformv2.Machine) bool {
 	healthCondition := new.GetCondition(machineprovider.ConditionTypeHealthCheck)
 	if !reflect.DeepEqual(old.Spec, new.Spec) {
 		return true
@@ -134,7 +134,7 @@ func (c *Controller) needsUpdate(old *platformv1.Machine, new *platformv1.Machin
 		return true
 
 	}
-	if new.Status.Phase == platformv1.MachineInitializing {
+	if new.Status.Phase == platformv2.MachineInitializing {
 		// if ResourceVersion is equal, it's an resync envent, should return true.
 		if old.ResourceVersion == new.ResourceVersion {
 			return true
@@ -142,11 +142,11 @@ func (c *Controller) needsUpdate(old *platformv1.Machine, new *platformv1.Machin
 		if len(new.Status.Conditions) == 0 {
 			return true
 		}
-		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv1.ConditionUnknown {
+		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv2.ConditionUnknown {
 			return true
 		}
 		// if user set last condition false block procesee until resync envent
-		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv1.ConditionFalse {
+		if new.Status.Conditions[len(new.Status.Conditions)-1].Status == platformv2.ConditionFalse {
 			return false
 		}
 	}
@@ -158,7 +158,7 @@ func (c *Controller) needsUpdate(old *platformv1.Machine, new *platformv1.Machin
 	return true
 }
 
-func (c *Controller) enqueue(obj *platformv1.Machine) {
+func (c *Controller) enqueue(obj *platformv2.Machine) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("couldn't get key for object %+v: %v", obj, err))
@@ -249,14 +249,14 @@ func (c *Controller) syncMachine(key string) error {
 	return c.reconcile(ctx, key, machine)
 }
 
-func (c *Controller) reconcile(ctx context.Context, key string, machine *platformv1.Machine) error {
+func (c *Controller) reconcile(ctx context.Context, key string, machine *platformv2.Machine) error {
 	var err error
 	switch machine.Status.Phase {
-	case platformv1.MachineInitializing:
+	case platformv2.MachineInitializing:
 		err = c.onCreate(ctx, machine)
-	case platformv1.MachineRunning, platformv1.MachineFailed, platformv1.MachineUpgrading:
+	case platformv2.MachineRunning, platformv2.MachineFailed, platformv2.MachineUpgrading:
 		err = c.onUpdate(ctx, machine)
-	case platformv1.MachineTerminating:
+	case platformv2.MachineTerminating:
 		log.FromContext(ctx).Info("Machine has been terminated. Attempting to cleanup resources")
 		err = c.deleter.Delete(ctx, key)
 		if err == nil {
@@ -269,7 +269,7 @@ func (c *Controller) reconcile(ctx context.Context, key string, machine *platfor
 	return err
 }
 
-func (c *Controller) onCreate(ctx context.Context, machine *platformv1.Machine) error {
+func (c *Controller) onCreate(ctx context.Context, machine *platformv2.Machine) error {
 	provider, err := machineprovider.GetProvider(machine.Spec.Type)
 	if err != nil {
 		return err
@@ -279,7 +279,7 @@ func (c *Controller) onCreate(ctx context.Context, machine *platformv1.Machine) 
 		return err
 	}
 
-	for machine.Status.Phase == platformv1.MachineInitializing {
+	for machine.Status.Phase == platformv2.MachineInitializing {
 		err = provider.OnCreate(ctx, machine, cluster)
 		if err != nil {
 			// Update status, ignore failure
@@ -295,7 +295,7 @@ func (c *Controller) onCreate(ctx context.Context, machine *platformv1.Machine) 
 	return err
 }
 
-func (c *Controller) onUpdate(ctx context.Context, machine *platformv1.Machine) error {
+func (c *Controller) onUpdate(ctx context.Context, machine *platformv2.Machine) error {
 	provider, err := machineprovider.GetProvider(machine.Spec.Type)
 	if err != nil {
 		return err

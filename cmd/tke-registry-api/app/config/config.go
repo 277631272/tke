@@ -29,7 +29,7 @@ import (
 	versionedclientset "tkestack.io/tke/api/client/clientset/versioned"
 	authversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/auth/v1"
 	businessversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/business/v1"
-	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
+	platformversionedclient "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 	versionedinformers "tkestack.io/tke/api/client/informers/externalversions"
 	generatedopenapi "tkestack.io/tke/api/openapi"
 	"tkestack.io/tke/api/registry"
@@ -74,7 +74,7 @@ type Config struct {
 	RegistryConfig                 *registryconfig.RegistryConfiguration
 	AuthClient                     authversionedclient.AuthV1Interface
 	BusinessClient                 businessversionedclient.BusinessV1Interface
-	PlatformClient                 platformversionedclient.PlatformV1Interface
+	PlatformClient                 platformversionedclient.PlatformV2Interface
 }
 
 // CreateConfigFromOptions creates a running configuration instance based
@@ -216,7 +216,7 @@ func CreateConfigFromOptions(serverName string, opts *options.Options) (*Config,
 	if err != nil {
 		return nil, err
 	}
-	cfg.PlatformClient = platformClient.PlatformV1()
+	cfg.PlatformClient = platformClient.PlatformV2()
 
 	return cfg, nil
 }

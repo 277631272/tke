@@ -21,29 +21,29 @@ package cluster
 import (
 	"context"
 	"time"
+	platformv2client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	platformv1client "tkestack.io/tke/api/client/clientset/versioned/typed/platform/v1"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/kubeadm"
 	"tkestack.io/tke/pkg/platform/provider/util/mark"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	typesv2 "tkestack.io/tke/pkg/platform/types/v2"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/apiclient"
 	"tkestack.io/tke/pkg/util/log"
 )
 
-func (p *Provider) EnsureCleanClusterMark(ctx context.Context, c *typesv1.Cluster) error {
+func (p *Provider) EnsureCleanClusterMark(ctx context.Context, c *typesv2.Cluster) error {
 	if clientset, err := c.Clientset(); err == nil {
 		mark.Delete(ctx, clientset)
 	}
 	return nil
 }
 
-func (p *Provider) EnsureRemoveETCDMember(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureRemoveETCDMember(ctx context.Context, c *v2.Cluster) error {
 	for _, machine := range c.Spec.ScalingMachines {
 		machineSSH, err := machine.SSH()
 		if err != nil {
@@ -57,7 +57,7 @@ func (p *Provider) EnsureRemoveETCDMember(ctx context.Context, c *v1.Cluster) er
 	return nil
 }
 
-func (p *Provider) EnsureRemoveNode(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureRemoveNode(ctx context.Context, c *v2.Cluster) error {
 	client, err := c.Clientset()
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (p *Provider) EnsureRemoveNode(ctx context.Context, c *v1.Cluster) error {
 	return nil
 }
 
-func (p *Provider) EnsureRemoveMachine(ctx context.Context, c *v1.Cluster) error {
+func (p *Provider) EnsureRemoveMachine(ctx context.Context, c *v2.Cluster) error {
 	log.FromContext(ctx).Info("delete machine start")
 	fieldSelector := fields.OneTermEqualSelector("spec.clusterName", c.Name).String()
 	machineList, err := p.PlatformClient.Machines().List(ctx, metav1.ListOptions{FieldSelector: fieldSelector})
@@ -109,7 +109,7 @@ func (p *Provider) EnsureRemoveMachine(ctx context.Context, c *v1.Cluster) error
 	return nil
 }
 
-func waitForMachineDelete(ctx context.Context, c platformv1client.PlatformV1Interface, machineName string) wait.ConditionFunc {
+func waitForMachineDelete(ctx context.Context, c platformv2client.PlatformV2Interface, machineName string) wait.ConditionFunc {
 	return func() (done bool, err error) {
 
 		if _, err := c.Machines().Get(ctx, machineName, metav1.GetOptions{}); err != nil {

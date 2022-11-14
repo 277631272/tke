@@ -33,13 +33,13 @@ import (
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/images"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/kubeadm"
-	v1 "tkestack.io/tke/pkg/platform/types/v1"
+	v2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/apiclient"
 	"tkestack.io/tke/pkg/util/json"
 	"tkestack.io/tke/pkg/util/version"
 )
 
-func (p *Provider) getKubeadmInitConfig(c *v1.Cluster) *kubeadm.InitConfig {
+func (p *Provider) getKubeadmInitConfig(c *v2.Cluster) *kubeadm.InitConfig {
 	config := new(kubeadm.InitConfig)
 	config.InitConfiguration = p.getInitConfiguration(c)
 	config.ClusterConfiguration = p.getClusterConfiguration(c)
@@ -49,7 +49,7 @@ func (p *Provider) getKubeadmInitConfig(c *v1.Cluster) *kubeadm.InitConfig {
 	return config
 }
 
-func (p *Provider) getKubeadmJoinConfig(c *v1.Cluster, machineIP string) *kubeadmv1beta2.JoinConfiguration {
+func (p *Provider) getKubeadmJoinConfig(c *v2.Cluster, machineIP string) *kubeadmv1beta2.JoinConfiguration {
 	apiServerEndpoint, err := c.HostForBootstrap()
 	if err != nil {
 		panic(err)
@@ -62,11 +62,11 @@ func (p *Provider) getKubeadmJoinConfig(c *v1.Cluster, machineIP string) *kubead
 	} else {
 		kubeletExtraArgs["node-labels"] = apiclient.GetNodeIPV6Label(machineIP)
 	}
-	if c.Cluster.Spec.Features.EnableCilium && c.Cluster.Spec.NetworkArgs["networkMode"] == "underlay" {
-		if asn, ok := c.Cluster.Spec.NetworkArgs["asn"]; ok {
+	if c.Cluster.Spec.Features.EnableCilium && c.Cluster.Spec.Networking.NetworkArgs["networkMode"] == "underlay" {
+		if asn, ok := c.Cluster.Spec.Networking.NetworkArgs["asn"]; ok {
 			kubeletExtraArgs["node-labels"] = fmt.Sprintf("%s,%s=%s", kubeletExtraArgs["node-labels"], apiclient.LabelASNCilium, asn)
 		}
-		if switchIP, ok := c.Cluster.Spec.NetworkArgs["switch-ip"]; ok {
+		if switchIP, ok := c.Cluster.Spec.Networking.NetworkArgs["switch-ip"]; ok {
 			kubeletExtraArgs["node-labels"] = fmt.Sprintf("%s,%s=%s", kubeletExtraArgs["node-labels"], apiclient.LabelSwitchIPCilium, switchIP)
 		}
 	}
@@ -101,7 +101,7 @@ func (p *Provider) getKubeadmJoinConfig(c *v1.Cluster, machineIP string) *kubead
 	}
 }
 
-func (p *Provider) getInitConfiguration(c *v1.Cluster) *kubeadmv1beta2.InitConfiguration {
+func (p *Provider) getInitConfiguration(c *v2.Cluster) *kubeadmv1beta2.InitConfiguration {
 	token, _ := kubeadmv1beta2.NewBootstrapTokenString(*c.ClusterCredential.BootstrapToken)
 
 	nodeRegistration := kubeadmv1beta2.NodeRegistrationOptions{}
@@ -112,11 +112,11 @@ func (p *Provider) getInitConfiguration(c *v1.Cluster) *kubeadmv1beta2.InitConfi
 	} else {
 		kubeletExtraArgs["node-labels"] = apiclient.GetNodeIPV6Label(machineIP)
 	}
-	if c.Cluster.Spec.Features.EnableCilium && c.Cluster.Spec.NetworkArgs["networkMode"] == "underlay" {
-		if asn, ok := c.Cluster.Spec.NetworkArgs["asn"]; ok {
+	if c.Cluster.Spec.Features.EnableCilium && c.Cluster.Spec.Networking.NetworkArgs["networkMode"] == "underlay" {
+		if asn, ok := c.Cluster.Spec.Networking.NetworkArgs["asn"]; ok {
 			kubeletExtraArgs["node-labels"] = fmt.Sprintf("%s,%s=%s", kubeletExtraArgs["node-labels"], apiclient.LabelASNCilium, asn)
 		}
-		if switchIP, ok := c.Cluster.Spec.NetworkArgs["switch-ip"]; ok {
+		if switchIP, ok := c.Cluster.Spec.Networking.NetworkArgs["switch-ip"]; ok {
 			kubeletExtraArgs["node-labels"] = fmt.Sprintf("%s,%s=%s", kubeletExtraArgs["node-labels"], apiclient.LabelSwitchIPCilium, switchIP)
 		}
 	}
@@ -152,7 +152,7 @@ func (p *Provider) getInitConfiguration(c *v1.Cluster) *kubeadmv1beta2.InitConfi
 	}
 }
 
-func (p *Provider) getClusterConfiguration(c *v1.Cluster) *kubeadmv1beta2.ClusterConfiguration {
+func (p *Provider) getClusterConfiguration(c *v2.Cluster) *kubeadmv1beta2.ClusterConfiguration {
 	controlPlaneEndpoint := net.JoinHostPort(constants.APIServerHostName, "6443")
 
 	kubernetesVolume := kubeadmv1beta2.HostPathMount{
@@ -163,7 +163,7 @@ func (p *Provider) getClusterConfiguration(c *v1.Cluster) *kubeadmv1beta2.Cluste
 
 	config := &kubeadmv1beta2.ClusterConfiguration{
 		Networking: kubeadmv1beta2.Networking{
-			DNSDomain:     c.Spec.DNSDomain,
+			DNSDomain:     c.Spec.Networking.DNSDomain,
 			ServiceSubnet: c.Status.ServiceCIDR,
 		},
 		KubernetesVersion:    c.Spec.Version,
@@ -212,12 +212,12 @@ func (Provider) needSetCoreDNS(k8sVersion string) bool {
 		version.Compare(k8sVersion, constants.NeedUpgradeCoreDNSUpperK8sVersion) >= 0
 }
 
-func (p *Provider) getKubeProxyConfiguration(c *v1.Cluster) *kubeproxyv1alpha1.KubeProxyConfiguration {
+func (p *Provider) getKubeProxyConfiguration(c *v2.Cluster) *kubeproxyv1alpha1.KubeProxyConfiguration {
 	config := &kubeproxyv1alpha1.KubeProxyConfiguration{}
 	config.Mode = "iptables"
 	if c.Spec.Features.IPVS != nil && *c.Spec.Features.IPVS {
 		config.Mode = "ipvs"
-		config.ClusterCIDR = c.Spec.ClusterCIDR
+		config.ClusterCIDR = c.Spec.Networking.ClusterCIDR
 		if c.Spec.Features.HA != nil {
 			if c.Spec.Features.HA.TKEHA != nil {
 				config.IPVS.ExcludeCIDRs = []string{fmt.Sprintf("%s/32", c.Spec.Features.HA.TKEHA.VIP)}
@@ -227,14 +227,14 @@ func (p *Provider) getKubeProxyConfiguration(c *v1.Cluster) *kubeproxyv1alpha1.K
 			}
 		}
 	}
-	if utilsnet.IsIPv6CIDRString(c.Spec.ClusterCIDR) {
+	if utilsnet.IsIPv6CIDRString(c.Spec.Networking.ClusterCIDR) {
 		config.BindAddress = "::"
 	}
 
 	return config
 }
 
-func (p *Provider) getKubeletConfiguration(c *v1.Cluster) *kubeletv1beta1.KubeletConfiguration {
+func (p *Provider) getKubeletConfiguration(c *v2.Cluster) *kubeletv1beta1.KubeletConfiguration {
 	return &kubeletv1beta1.KubeletConfiguration{
 		KubeReserved: map[string]string{
 			"cpu":    "100m",
@@ -248,7 +248,7 @@ func (p *Provider) getKubeletConfiguration(c *v1.Cluster) *kubeletv1beta1.Kubele
 	}
 }
 
-func (p *Provider) getAPIServerExtraArgs(c *v1.Cluster) map[string]string {
+func (p *Provider) getAPIServerExtraArgs(c *v2.Cluster) map[string]string {
 	args := map[string]string{
 		"token-auth-file": constants.TokenFile,
 	}
@@ -260,66 +260,66 @@ func (p *Provider) getAPIServerExtraArgs(c *v1.Cluster) map[string]string {
 		args["authorization-webhook-config-file"] = constants.KubernetesAuthzWebhookConfigFile
 		args["authorization-mode"] = "Node,RBAC,Webhook"
 	}
-	for k, v := range c.Spec.APIServerExtraArgs {
+	for k, v := range c.Spec.APIServer.ExtraArgs {
 		args[k] = v
 	}
 
-	utilruntime.Must(mergo.Merge(&args, c.Spec.APIServerExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, c.Spec.APIServer.ExtraArgs))
 	utilruntime.Must(mergo.Merge(&args, p.Config.APIServer.ExtraArgs))
 
 	return args
 }
 
-func (p *Provider) getControllerManagerExtraArgs(c *v1.Cluster) map[string]string {
+func (p *Provider) getControllerManagerExtraArgs(c *v2.Cluster) map[string]string {
 	args := map[string]string{
 		"allocate-node-cidrs": "true",
-		"cluster-cidr":        c.Spec.ClusterCIDR,
+		"cluster-cidr":        c.Spec.Networking.ClusterCIDR,
 		"bind-address":        "0.0.0.0",
 	}
 	if c.Spec.Features.IPv6DualStack {
 		args["node-cidr-mask-size-ipv4"] = fmt.Sprintf("%v", c.Status.NodeCIDRMaskSizeIPv4)
 		args["node-cidr-mask-size-ipv6"] = fmt.Sprintf("%v", c.Status.NodeCIDRMaskSizeIPv6)
-		args["service-cluster-ip-range"] = *c.Spec.ServiceCIDR
+		args["service-cluster-ip-range"] = c.Spec.Networking.ServiceCIDR
 	} else {
 		args["node-cidr-mask-size"] = fmt.Sprintf("%v", c.Status.NodeCIDRMaskSize)
 		args["service-cluster-ip-range"] = c.Status.ServiceCIDR
 	}
-	if c.Spec.Features.EnableCilium && c.Spec.NetworkArgs["networkMode"] == "overlay" {
+	if c.Spec.Features.EnableCilium && c.Spec.Networking.NetworkArgs["networkMode"] == "overlay" {
 		args["configure-cloud-routes"] = "false"
 		args["allocate-node-cidrs"] = "false"
 	}
-	for k, v := range c.Spec.ControllerManagerExtraArgs {
+	for k, v := range c.Spec.ControllerManager.ExtraArgs {
 		args[k] = v
 	}
 
-	utilruntime.Must(mergo.Merge(&args, c.Spec.ControllerManagerExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, c.Spec.ControllerManager.ExtraArgs))
 	utilruntime.Must(mergo.Merge(&args, p.Config.ControllerManager.ExtraArgs))
 
 	return args
 }
 
-func (p *Provider) getSchedulerExtraArgs(c *v1.Cluster) map[string]string {
+func (p *Provider) getSchedulerExtraArgs(c *v2.Cluster) map[string]string {
 	args := map[string]string{
 		"use-legacy-policy-config": "true",
 		"policy-config-file":       constants.KubernetesSchedulerPolicyConfigFile,
 		"bind-address":             "0.0.0.0",
 	}
-	for k, v := range c.Spec.SchedulerExtraArgs {
+	for k, v := range c.Spec.Scheduler.ExtraArgs {
 		args[k] = v
 	}
 
-	utilruntime.Must(mergo.Merge(&args, c.Spec.SchedulerExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, c.Spec.Scheduler.ExtraArgs))
 	utilruntime.Must(mergo.Merge(&args, p.Config.Scheduler.ExtraArgs))
 
 	return args
 }
 
-func (p *Provider) getKubeletExtraArgs(c *v1.Cluster) map[string]string {
+func (p *Provider) getKubeletExtraArgs(c *v2.Cluster) map[string]string {
 	args := map[string]string{
 		"pod-infra-container-image": path.Join(p.getImagePrefix(c), images.Get().Pause.BaseName()),
 	}
 
-	utilruntime.Must(mergo.Merge(&args, c.Spec.KubeletExtraArgs))
+	utilruntime.Must(mergo.Merge(&args, c.Spec.Kubelet.ExtraArgs))
 	utilruntime.Must(mergo.Merge(&args, p.Config.Kubelet.ExtraArgs))
 
 	return args

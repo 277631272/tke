@@ -27,6 +27,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	platforminternalclient "tkestack.io/tke/api/client/clientset/internalversion/typed/platform/internalversion"
 	"tkestack.io/tke/api/platform"
+	v2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/apiserver/storage"
 	clusterstorage "tkestack.io/tke/pkg/platform/registry/cluster/storage"
 	clusteraddontypestorage "tkestack.io/tke/pkg/platform/registry/clusteraddontype/storage"
@@ -57,6 +58,13 @@ func (s *StorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.A
 	if apiResourceConfigSource.VersionEnabled(v1.SchemeGroupVersion) {
 		apiGroupInfo.VersionedResourcesStorageMap[v1.SchemeGroupVersion.Version] = s.v1Storage(apiResourceConfigSource, restOptionsGetter, s.LoopbackClientConfig)
 	}
+	if apiResourceConfigSource.VersionEnabled(v2.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[v2.SchemeGroupVersion.Version] = s.v1Storage(apiResourceConfigSource, restOptionsGetter, s.LoopbackClientConfig)
+	}
+	//apiGroupInfo.PrioritizedVersions = []schema.GroupVersion{
+	//	{"platform.tkestack.io", "v2"},
+	//	{"platform.tkestack.io", "v1"},
+	//}
 
 	return apiGroupInfo, true
 }

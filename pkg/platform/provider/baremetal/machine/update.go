@@ -21,17 +21,17 @@ package machine
 import (
 	"context"
 
-	platformv1 "tkestack.io/tke/api/platform/v1"
+	platformv2 "tkestack.io/tke/api/platform/v2"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/constants"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/phases/kubeadm"
 	"tkestack.io/tke/pkg/platform/provider/baremetal/util"
-	typesv1 "tkestack.io/tke/pkg/platform/types/v1"
+	typesv2 "tkestack.io/tke/pkg/platform/types/v2"
 	"tkestack.io/tke/pkg/util/log"
 )
 
-func (p *Provider) EnsurePreUpgradeHook(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsurePreUpgradeHook(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 
-	mc := []platformv1.ClusterMachine{
+	mc := []platformv2.ClusterMachine{
 		{
 			IP:       machine.Spec.IP,
 			Port:     machine.Spec.Port,
@@ -39,10 +39,10 @@ func (p *Provider) EnsurePreUpgradeHook(ctx context.Context, machine *platformv1
 			Password: machine.Spec.Password,
 		},
 	}
-	return util.ExcuteCustomizedHook(ctx, cluster, platformv1.HookPreUpgrade, mc)
+	return util.ExcuteCustomizedHook(ctx, cluster, platformv2.HookPreUpgrade, mc)
 }
 
-func (p *Provider) EnsureUpgrade(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsureUpgrade(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 	if _, ok := machine.Labels[constants.LabelNodeNeedUpgrade]; !ok {
 		return nil
 	}
@@ -87,9 +87,9 @@ func (p *Provider) EnsureUpgrade(ctx context.Context, machine *platformv1.Machin
 	return nil
 }
 
-func (p *Provider) EnsurePostUpgradeHook(ctx context.Context, machine *platformv1.Machine, cluster *typesv1.Cluster) error {
+func (p *Provider) EnsurePostUpgradeHook(ctx context.Context, machine *platformv2.Machine, cluster *typesv2.Cluster) error {
 
-	mc := []platformv1.ClusterMachine{
+	mc := []platformv2.ClusterMachine{
 		{
 			IP:       machine.Spec.IP,
 			Port:     machine.Spec.Port,
@@ -97,5 +97,5 @@ func (p *Provider) EnsurePostUpgradeHook(ctx context.Context, machine *platformv
 			Password: machine.Spec.Password,
 		},
 	}
-	return util.ExcuteCustomizedHook(ctx, cluster, platformv1.HookPostUpgrade, mc)
+	return util.ExcuteCustomizedHook(ctx, cluster, platformv2.HookPostUpgrade, mc)
 }

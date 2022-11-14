@@ -24,7 +24,6 @@ require (
 	github.com/chartmuseum/helm-push v0.9.0
 	github.com/chartmuseum/storage v0.11.0
 	github.com/clusternet/apis v0.6.0
-	github.com/clusternet/clusternet v0.6.0 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/coreos/prometheus-operator v0.38.1-0.20200506070354-4231c1d4b313
 	github.com/cyphar/filepath-securejoin v0.2.2
@@ -37,7 +36,6 @@ require (
 	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/go-openapi/inflect v0.19.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/gofuzz v1.1.0
@@ -53,7 +51,6 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/json-iterator/go v1.1.11
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de
-	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
 	github.com/parnurzeal/gorequest v0.2.15
@@ -82,8 +79,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	google.golang.org/grpc v1.40.0
-	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.29.1
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -111,4 +106,12 @@ require (
 	sigs.k8s.io/controller-runtime v0.9.3
 	sigs.k8s.io/yaml v1.2.0
 	yunion.io/x/pkg v0.0.0-20200603123312-ad58e621aec0
+)
+
+require (
+	github.com/clusternet/clusternet v0.6.0 // indirect
+	github.com/garyburd/redigo v1.6.0 // indirect
+	github.com/moul/http2curl v1.0.0 // indirect
+	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )
