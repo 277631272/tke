@@ -20,8 +20,11 @@ package v1
 
 import (
 	"fmt"
-
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
+	"tkestack.io/tke/api/platform"
+	"unsafe"
 )
 
 func addConversionFuncs(scheme *runtime.Scheme) error {
@@ -197,4 +200,14 @@ func AddFieldLabelConversionsForCronHPA(scheme *runtime.Scheme) error {
 				return "", "", fmt.Errorf("field label not supported: %s", label)
 			}
 		})
+}
+
+func Convert_platform_ClusterSpec_To_v1_ClusterSpec(in *platform.ClusterSpec, out *ClusterSpec, s conversion.Scope) error {
+	out.ClusterCredentialRef = (*corev1.LocalObjectReference)(unsafe.Pointer(in.ClusterCredentialRef))
+	return autoConvert_platform_ClusterSpec_To_v1_ClusterSpec(in, out, s)
+}
+
+func Convert_v1_ClusterSpec_To_platform_ClusterSpec(in *ClusterSpec, out *platform.ClusterSpec, s conversion.Scope) error {
+	out.ClusterCredentialRef = (*corev1.LocalObjectReference)(unsafe.Pointer(in.ClusterCredentialRef))
+	return autoConvert_v1_ClusterSpec_To_platform_ClusterSpec(in, out, s)
 }

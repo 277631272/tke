@@ -627,6 +627,7 @@ message ClusterSpec {
   // If not specified, cluster controller will create one;
   // If specified, provider must make sure is valid.
   // +optional
+  // +k8s:conversion-gen=false
   optional k8s.io.api.core.v1.LocalObjectReference clusterCredentialRef = 20;
 
   // Etcd holds configuration for etcd.

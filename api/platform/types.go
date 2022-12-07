@@ -199,6 +199,7 @@ type ClusterSpec struct {
 	// If not specified, cluster controller will create one;
 	// If specified, provider must make sure is valid.
 	// +optional
+	//+k8s:conversion-gen=false
 	ClusterCredentialRef *corev1.LocalObjectReference
 
 	// Etcd holds configuration for etcd.

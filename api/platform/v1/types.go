@@ -208,6 +208,7 @@ type ClusterSpec struct {
 	// If not specified, cluster controller will create one;
 	// If specified, provider must make sure is valid.
 	// +optional
+	//+k8s:conversion-gen=false
 	ClusterCredentialRef *corev1.LocalObjectReference `json:"clusterCredentialRef,omitempty" probobuf:"bytes,20,opt,name=clusterCredentialRef" protobuf:"bytes,20,opt,name=clusterCredentialRef"`
 
 	// Etcd holds configuration for etcd.
